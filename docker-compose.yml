@@ -36,7 +36,7 @@ services:
       context: .
       dockerfile: Dockerfile.dev
       target: dev
-    command: pnpm --filter medfolio-api dev
+    command: pnpm --parallel --filter @nexo-centro/db --filter medfolio-api dev
     working_dir: /app
     environment:
       NODE_ENV: ${NODE_ENV:-development}

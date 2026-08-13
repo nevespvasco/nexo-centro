@@ -11,16 +11,18 @@ FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/medfolio-api/package.json ./apps/medfolio-api/package.json
 COPY apps/medfolio/package.json ./apps/medfolio/package.json
+COPY packages/db/package.json ./packages/db/package.json
 RUN --mount=type=cache,target=/pnpm/store \
     pnpm install --frozen-lockfile --filter medfolio-api...
 
 FROM deps AS build
+COPY packages/db ./packages/db
 COPY apps/medfolio-api ./apps/medfolio-api
-RUN pnpm --filter medfolio-api build
+RUN pnpm --filter medfolio-api... build
 
 FROM build AS deploy
 RUN --mount=type=cache,target=/pnpm/store \
-    pnpm deploy --filter=medfolio-api --prod --legacy /prod/api && \
+    pnpm deploy --filter=medfolio-api --prod /prod/api && \
     cp -r apps/medfolio-api/dist /prod/api/dist
 
 FROM node:24-bookworm-slim AS prod

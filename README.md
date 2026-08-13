@@ -78,3 +78,28 @@ pnpm docker:prod
 Usa `docker-compose.prod.yml`, que constrói as imagens de produção dos dois apps (build multi-stage, API corre como utilizador não-root) e isola a base de dados numa rede interna sem rota para o exterior.
 
 **Nunca reutilizar as credenciais de exemplo do `.env.example` em produção** — gera uma password forte própria para `POSTGRES_PASSWORD`.
+
+## Base de dados (Drizzle)
+
+O schema, o cliente Drizzle e as migrações vivem em [`packages/db`](packages/db) (`@nexo-centro/db`), consumido pela API via um `DrizzleModule` global (token `DRIZZLE`).
+
+```bash
+pnpm db:generate   # gera SQL de migração a partir do schema (não liga à DB)
+pnpm db:migrate    # aplica as migrações pendentes
+pnpm db:push       # (dev only) sincroniza o schema diretamente, sem gerar SQL
+pnpm db:studio     # abre o Drizzle Studio
+```
+
+`db:generate` não precisa de ligação à base de dados. `db:migrate`, `db:push` e `db:studio` precisam — e o `DATABASE_URL` do `.env` usa o hostname `db`, que só resolve **dentro** da rede Docker. A partir do host, corre-os com `localhost`:
+
+```bash
+DATABASE_URL=postgresql://nexo:<password>@localhost:5432/nexo_centro pnpm db:migrate
+```
+
+Ou corre o comando dentro do container da API, onde o hostname `db` já resolve:
+
+```bash
+docker compose exec api pnpm --filter @nexo-centro/db db:migrate
+```
+
+As migrações SQL geradas ficam em `packages/db/drizzle/` e são commitadas no repositório.
