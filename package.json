@@ -7,7 +7,11 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "md:dev": "pnpm --filter medfolio dev",
-    "md-api:dev": "pnpm --filter medfolio-api start:dev"
+    "md-api:dev": "pnpm --filter medfolio-api dev",
+    "docker:dev": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:deps": "docker compose run --rm deps",
+    "docker:prod": "docker compose -f docker-compose.prod.yml up --build -d"
   },
   "keywords": [],
   "author": "",
@@ -19,5 +23,6 @@
       "onFail": "download"
     }
   },
+  "packageManager": "pnpm@11.21.0",
   "type": "module"
 }
