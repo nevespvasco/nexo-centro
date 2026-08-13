@@ -22,5 +22,3 @@ FROM nginx:1.29-alpine AS prod
 COPY --from=build /app/apps/medfolio/dist /usr/share/nginx/html
 COPY apps/medfolio/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
-
-FROM base AS dev

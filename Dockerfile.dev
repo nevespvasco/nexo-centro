@@ -1,0 +1,27 @@
+# Build context: repo root
+# Shared dev image for the deps/api/web services — all three need the same
+# Node + pnpm toolchain, so one image avoids drift between duplicated stages.
+
+FROM node:24-bookworm-slim AS dev
+# procps (ps) is required by @nestjs/cli's tree-kill to fully stop the
+# previous run's child process on hot reload — without it, only the shell
+# wrapper is killed and the old `node dist/main` process leaks, holding the
+# port and crashing the next restart with EADDRINUSE.
+RUN apt-get update && apt-get install -y --no-install-recommends procps \
+ && rm -rf /var/lib/apt/lists/*
+RUN npm install -g pnpm@11.21.0
+ENV PNPM_HOME=/pnpm
+ENV PATH="$PNPM_HOME:$PATH"
+WORKDIR /app
+
+# Create mount points before the named volumes exist, owned by `node`:
+# Docker seeds a brand-new named volume by copying the image directory's
+# content AND ownership, so this is what makes the volumes non-root.
+RUN mkdir -p /app/node_modules \
+             /app/apps/medfolio/node_modules \
+             /app/apps/medfolio-api/node_modules \
+             /pnpm/store \
+ && chown -R node:node /app /pnpm
+
+USER node
+RUN pnpm config set store-dir /pnpm/store

@@ -3,12 +3,13 @@ x-node-volumes: &node-volumes
   - node_modules:/app/node_modules
   - medfolio_node_modules:/app/apps/medfolio/node_modules
   - medfolio_api_node_modules:/app/apps/medfolio-api/node_modules
+  - pnpm_store:/pnpm/store
 
 services:
   deps:
     build:
       context: .
-      dockerfile: apps/medfolio-api/Dockerfile
+      dockerfile: Dockerfile.dev
       target: dev
     command: pnpm install --frozen-lockfile
     working_dir: /app
@@ -17,9 +18,9 @@ services:
   db:
     image: postgres:18-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?define POSTGRES_USER no .env (copia de .env.example)}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD no .env (copia de .env.example)}
+      POSTGRES_DB: ${POSTGRES_DB:?define POSTGRES_DB no .env (copia de .env.example)}
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
@@ -33,14 +34,14 @@ services:
   api:
     build:
       context: .
-      dockerfile: apps/medfolio-api/Dockerfile
+      dockerfile: Dockerfile.dev
       target: dev
     command: pnpm --filter medfolio-api dev
     working_dir: /app
     environment:
-      NODE_ENV: ${NODE_ENV}
-      DATABASE_URL: ${DATABASE_URL}
-      CORS_ORIGIN: ${CORS_ORIGIN}
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: ${DATABASE_URL:?define DATABASE_URL no .env (copia de .env.example)}
+      CORS_ORIGIN: ${CORS_ORIGIN:?define CORS_ORIGIN no .env (copia de .env.example)}
     ports:
       - "3001:3001"
     volumes: *node-volumes
@@ -53,12 +54,12 @@ services:
   web:
     build:
       context: .
-      dockerfile: apps/medfolio/Dockerfile
+      dockerfile: Dockerfile.dev
       target: dev
     command: pnpm --filter medfolio dev
     working_dir: /app
     environment:
-      CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING}
+      CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-false}
     ports:
       - "5173:5173"
     volumes: *node-volumes
@@ -70,4 +71,5 @@ volumes:
   node_modules:
   medfolio_node_modules:
   medfolio_api_node_modules:
+  pnpm_store:
   pgdata:
