@@ -1,0 +1,456 @@
+Enum sexo_enum {
+  masculino
+  feminino
+  outro
+}
+
+Enum tipo_atividade_enum {
+  artigo
+  comunicacao
+  congresso
+  poster
+  outro
+}
+
+Enum tipo_formacao_enum {
+  curso
+  congresso
+  pos_graduacao
+  mestrado
+  doutoramento
+  outro
+}
+
+Enum admin_role_enum {
+  super_admin
+  admin
+}
+
+
+// =====================================================
+// USERS
+// =====================================================
+
+Table users {
+  id bigint [pk]
+  name varchar
+  email varchar [unique]
+  is_active boolean [default: true]
+
+  hospital_id bigint [null, ref: > hospitals.id]
+  especialidade_id bigint [null, ref: > especialidades.id]
+
+  email_verified_at timestamp [null]
+  password varchar
+  two_factor_secret text [null]
+  two_factor_recovery_codes text [null]
+  two_factor_confirmed_at timestamp [null]
+}
+
+
+// =====================================================
+// UTENTES
+// =====================================================
+
+Table utentes {
+  id bigint [pk]
+  nome varchar [null]
+  idade int
+  sexo sexo_enum
+  processo int
+  user_id bigint [null, ref: > users.id]
+}
+
+
+// =====================================================
+// REGISTO CIRURGICOS
+// =====================================================
+
+Table registo_cirurgicos {
+  id bigint [pk]
+
+  user_id bigint [null, ref: > users.id]
+  utente_id bigint [not null, ref: > utentes.id]
+
+  hospital_id bigint [null, ref: > hospitals.id]
+  especialidade_id bigint [null, ref: > especialidades.id]
+
+  data_cirurgia date
+
+  tipo_de_cirurgia_id bigint [
+    not null,
+    ref: > tipo_de_cirurgias.id
+  ]
+
+  tipo_de_abordagem_id bigint [
+    null,
+    ref: > tipo_de_abordagens.id
+  ]
+
+  ambulatorio boolean [default: false]
+  observacoes text [null]
+}
+
+
+// =====================================================
+// CIRURGIAS
+// =====================================================
+
+Table cirurgias {
+  id bigint [pk]
+
+  registo_cirurgico_id bigint [
+    not null,
+    ref: > registo_cirurgicos.id
+  ]
+
+  diagnostico_id bigint [
+    not null,
+    ref: > diagnosticos.id
+  ]
+
+  procedimento_id bigint [
+    not null,
+    ref: > procedimentos.id
+  ]
+
+  tipo varchar [
+    null,
+    note: 'Benigno/Maligno'
+  ]
+
+  funcao_cirurgiao_id bigint [
+    null,
+    ref: > funcao_cirurgiaos.id
+  ]
+
+  clavien_dindo varchar [
+    null,
+    note: 'Coluna clavien-dindo'
+  ]
+
+  anatomia_patologica text [null]
+  observacoes text [null]
+}
+
+
+// =====================================================
+// DIAGNOSTICOS
+// =====================================================
+
+Table diagnosticos {
+  id bigint [pk]
+
+  nome varchar
+
+  zona_anatomica_id bigint [
+    null,
+    ref: > zona_anatomicas.id
+  ]
+
+  tipo varchar [null]
+  descricao text [null]
+
+  user_id bigint [
+    null,
+    ref: > users.id
+  ]
+}
+
+
+// =====================================================
+// PROCEDIMENTOS
+// =====================================================
+
+Table procedimentos {
+  id bigint [pk]
+
+  nome varchar
+
+  especialidade varchar [
+    note: 'STRING, nao FK'
+  ]
+
+  descricao text [null]
+
+  user_id bigint [
+    null,
+    ref: > users.id
+  ]
+}
+
+
+// =====================================================
+// ESPECIALIDADES
+// =====================================================
+
+Table especialidades {
+  id bigint [pk]
+
+  nome varchar
+  descricao varchar [null]
+
+  user_id bigint [
+    not null,
+    ref: > users.id
+  ]
+}
+
+
+// =====================================================
+// HOSPITALS
+// =====================================================
+
+Table hospitals {
+  id bigint [pk]
+
+  nome varchar
+
+  user_id bigint [
+    not null,
+    ref: > users.id
+  ]
+}
+
+
+// =====================================================
+// ZONAS ANATOMICAS
+// =====================================================
+
+Table zona_anatomicas {
+  id bigint [pk]
+
+  nome varchar
+  descricao text [null]
+
+  user_id bigint [
+    not null,
+    ref: > users.id
+  ]
+
+  ordem int [default: 0]
+}
+
+
+// =====================================================
+// TIPOS DE CIRURGIAS
+// =====================================================
+
+Table tipo_de_cirurgias {
+  id bigint [pk]
+
+  nome varchar [
+    note: 'GLOBAL, sem user_id'
+  ]
+}
+
+
+// =====================================================
+// FUNCOES DOS CIRURGIOES
+// =====================================================
+
+Table funcao_cirurgiaos {
+  id bigint [pk]
+
+  nome varchar [
+    note: 'GLOBAL, sem user_id'
+  ]
+}
+
+
+// =====================================================
+// TIPOS DE ABORDAGEM
+// =====================================================
+
+Table tipo_de_abordagens {
+  id bigint [pk]
+
+  nome varchar
+
+  user_id bigint [
+    not null,
+    ref: > users.id,
+    note: 'Sem scope'
+  ]
+}
+
+
+// =====================================================
+// ATIVIDADES CIENTIFICAS
+// =====================================================
+
+Table atividades_cientificas {
+  id bigint [pk]
+
+  user_id bigint [
+    not null,
+    ref: > users.id
+  ]
+
+  titulo varchar
+  tipo tipo_atividade_enum
+  data date
+
+  autor_principal boolean [
+    default: false
+  ]
+
+  posicao_autor int [null]
+
+  fator_impacto decimal(8,3) [
+    null
+  ]
+
+  ficheiro_path varchar [null]
+}
+
+
+// =====================================================
+// FORMACOES
+// =====================================================
+
+Table formacoes {
+  id bigint [pk]
+
+  user_id bigint [
+    not null,
+    ref: > users.id
+  ]
+
+  titulo varchar
+
+  tipo tipo_formacao_enum
+
+  data_inicio date
+  data_fim date [null]
+
+  duracao_horas int [null]
+
+  creditos decimal(8,2) [
+    null
+  ]
+
+  certificado_path varchar [null]
+
+  Indexes {
+    user_id
+    tipo
+    data_inicio
+  }
+}
+
+
+// =====================================================
+// ADMIN USERS
+// =====================================================
+
+Table admin_users {
+  id bigint [pk]
+
+  name varchar
+  email varchar [unique]
+  password varchar
+
+  role admin_role_enum [
+    default: 'admin'
+  ]
+}
+
+
+// =====================================================
+// ADMIN ACTIVITY LOGS
+// =====================================================
+
+Table admin_activity_logs {
+  id bigint [pk]
+
+  admin_user_id bigint [
+    not null,
+    ref: > admin_users.id
+  ]
+
+  action varchar
+
+  target_type varchar [null]
+  target_id bigint [null]
+
+  details json [null]
+
+  ip_address varchar [null]
+  user_agent varchar [null]
+}
+
+
+// =====================================================
+// ROLES
+// =====================================================
+
+Table roles {
+  id bigint [pk]
+
+  name varchar
+  guard_name varchar
+
+  Indexes {
+    (name, guard_name) [unique]
+  }
+}
+
+
+// =====================================================
+// PERMISSIONS
+// =====================================================
+
+Table permissions {
+  id bigint [pk]
+
+  name varchar
+  guard_name varchar
+
+  Indexes {
+    (name, guard_name) [unique]
+  }
+}
+
+
+// =====================================================
+// MODEL HAS ROLES
+// Laravel polymorphic relationship
+// =====================================================
+
+Table model_has_roles {
+  role_id bigint [
+    not null,
+    ref: > roles.id
+  ]
+
+  model_type varchar [not null]
+  model_id bigint [not null]
+
+  Indexes {
+    (role_id, model_id, model_type) [pk]
+    model_id
+    model_type
+  }
+}
+
+
+// =====================================================
+// ROLE HAS PERMISSIONS
+// =====================================================
+
+Table role_has_permissions {
+  permission_id bigint [
+    not null,
+    ref: > permissions.id
+  ]
+
+  role_id bigint [
+    not null,
+    ref: > roles.id
+  ]
+
+  Indexes {
+    (permission_id, role_id) [pk]
+  }
+}
