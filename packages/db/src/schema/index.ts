@@ -1,8 +1,10 @@
-import { pgTable, uuid, varchar, timestamp } from 'drizzle-orm/pg-core';
-
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  email: varchar('email', { length: 255 }).notNull().unique(),
-  name: varchar('name', { length: 255 }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export * from './enums.js';
+export * from './users.js';
+export * from './hospitals.js';
+export * from './reference.js';
+export * from './utentes.js';
+export * from './registos.js';
+export * from './portfolio.js';
+export * from './admin.js';
+export * from './permissions.js';
+export * from './relations.js';
