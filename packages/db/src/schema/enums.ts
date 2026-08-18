@@ -39,5 +39,3 @@ export const clavienDindoEnum = pgEnum('clavien_dindo', [
 // o índice único parcial (WHERE deleted_at IS NULL) já ignora linhas escondidas, pelo que o
 // mesmo utilizador pode voltar a pedir adesão sem conflito.
 export const membershipStatusEnum = pgEnum('membership_status', ['pending', 'approved']);
-
-export const hospitalRoleEnum = pgEnum('hospital_role', ['membro', 'admin']);

@@ -12,13 +12,8 @@ import {
   funcaoCirurgiaos,
   hospitalUser,
   hospitals,
-  modelHasPermissions,
-  modelHasRoles,
-  permissions,
   procedimentos,
   registoCirurgicos,
-  roleHasPermissions,
-  roles,
   tipoDeAbordagens,
   tipoDeCirurgias,
   users,
@@ -43,39 +38,24 @@ async function main() {
     // Tudo numa transação: se qualquer insert falhar, faz rollback e a base de
     // dados fica limpa, para o seed poder voltar a correr sem meio-estado.
     await db.transaction(async (tx) => {
-      await tx
-        .insert(adminUsers)
-        .values({ nome: 'Admin Nexo', email: 'admin@nexo-centro.pt', password: DEV_PASSWORD_HASH })
-        .returning();
-
       const [hospitalCentral, hospitalNorte] = await tx
         .insert(hospitals)
         .values([{ nome: 'Hospital Central de Lisboa' }, { nome: 'Hospital do Norte' }])
         .returning();
 
-      const [roleAdmin, roleCirurgiao] = await tx
-        .insert(roles)
-        .values([
-          { nome: 'admin', guardName: 'web' },
-          { nome: 'cirurgiao', guardName: 'web' },
-        ])
-        .returning();
-
-      const [permManageUsers, permViewRegistos, permManageRegistos] = await tx
-        .insert(permissions)
-        .values([
-          { nome: 'manage_users', guardName: 'web' },
-          { nome: 'view_registos', guardName: 'web' },
-          { nome: 'manage_registos', guardName: 'web' },
-        ])
-        .returning();
-
-      await tx.insert(roleHasPermissions).values([
-        { roleId: roleAdmin.id, permissionId: permManageUsers.id },
-        { roleId: roleAdmin.id, permissionId: permViewRegistos.id },
-        { roleId: roleAdmin.id, permissionId: permManageRegistos.id },
-        { roleId: roleCirurgiao.id, permissionId: permViewRegistos.id },
-        { roleId: roleCirurgiao.id, permissionId: permManageRegistos.id },
+      await tx.insert(adminUsers).values([
+        {
+          nome: 'Admin Nexo',
+          email: 'admin@nexo-centro.pt',
+          password: DEV_PASSWORD_HASH,
+          hospitalId: null,
+        },
+        {
+          nome: 'Admin Hospital Central',
+          email: 'admin.central@nexo-centro.pt',
+          password: DEV_PASSWORD_HASH,
+          hospitalId: hospitalCentral.id,
+        },
       ]);
 
       const [espOrtopedia, espUrologia, espGlobalCirurgiaGeral] = await tx
@@ -83,7 +63,7 @@ async function main() {
         .values([
           { nome: 'Ortopedia', hospitalId: hospitalCentral.id },
           { nome: 'Urologia', hospitalId: hospitalNorte.id },
-          { nome: 'Cirurgia Geral', isSystem: true },
+          { nome: 'Cirurgia Geral' },
         ])
         .returning();
 
@@ -119,7 +99,6 @@ async function main() {
           hospitalId: hospitalCentral.id,
           userId: userJoao.id,
           status: 'approved',
-          papel: 'admin',
           approvedByUserId: userJoao.id,
           approvedAt: new Date(),
         },
@@ -127,7 +106,6 @@ async function main() {
           hospitalId: hospitalNorte.id,
           userId: userMaria.id,
           status: 'approved',
-          papel: 'membro',
           approvedByUserId: userJoao.id,
           approvedAt: new Date(),
         },
@@ -135,19 +113,7 @@ async function main() {
           hospitalId: hospitalCentral.id,
           userId: userRicardo.id,
           status: 'pending',
-          papel: 'membro',
         },
-      ]);
-
-      await tx.insert(modelHasRoles).values([
-        { roleId: roleAdmin.id, modelType: 'user', modelId: userJoao.id },
-        { roleId: roleCirurgiao.id, modelType: 'user', modelId: userMaria.id },
-        { roleId: roleCirurgiao.id, modelType: 'user', modelId: userRicardo.id },
-      ]);
-
-      await tx.insert(modelHasPermissions).values([
-        { permissionId: permManageUsers.id, modelType: 'user', modelId: userJoao.id },
-        { permissionId: permViewRegistos.id, modelType: 'user', modelId: userRicardo.id },
       ]);
 
       const [zonaJoelho, zonaQuadril] = await tx

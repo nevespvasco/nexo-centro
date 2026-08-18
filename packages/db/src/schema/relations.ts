@@ -2,7 +2,6 @@ import { relations } from 'drizzle-orm';
 import { adminUsers } from './admin.js';
 import { hospitalUser, hospitals } from './hospitals.js';
 import { atividadesCientificas, formacoes } from './portfolio.js';
-import { permissions, roleHasPermissions, roles } from './permissions.js';
 import {
   diagnosticos,
   especialidades,
@@ -40,6 +39,14 @@ export const hospitalsRelations = relations(hospitals, ({ many }) => ({
   tipoDeCirurgias: many(tipoDeCirurgias),
   funcaoCirurgiaos: many(funcaoCirurgiaos),
   tipoDeAbordagens: many(tipoDeAbordagens),
+  adminUsers: many(adminUsers),
+}));
+
+export const adminUsersRelations = relations(adminUsers, ({ one }) => ({
+  hospital: one(hospitals, {
+    fields: [adminUsers.hospitalId],
+    references: [hospitals.id],
+  }),
 }));
 
 export const hospitalUserRelations = relations(hospitalUser, ({ one }) => ({
@@ -195,24 +202,5 @@ export const formacoesRelations = relations(formacoes, ({ one }) => ({
   user: one(users, {
     fields: [formacoes.userId],
     references: [users.id],
-  }),
-}));
-
-export const rolesRelations = relations(roles, ({ many }) => ({
-  roleHasPermissions: many(roleHasPermissions),
-}));
-
-export const permissionsRelations = relations(permissions, ({ many }) => ({
-  roleHasPermissions: many(roleHasPermissions),
-}));
-
-export const roleHasPermissionsRelations = relations(roleHasPermissions, ({ one }) => ({
-  role: one(roles, {
-    fields: [roleHasPermissions.roleId],
-    references: [roles.id],
-  }),
-  permission: one(permissions, {
-    fields: [roleHasPermissions.permissionId],
-    references: [permissions.id],
   }),
 }));

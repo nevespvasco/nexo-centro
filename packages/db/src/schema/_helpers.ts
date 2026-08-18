@@ -9,10 +9,3 @@ export const timestamps = {
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
 };
 
-export const auditOnly = {
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
-};

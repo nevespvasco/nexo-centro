@@ -1,6 +1,5 @@
 import { sql } from 'drizzle-orm';
 import {
-  boolean,
   index,
   integer,
   pgTable,
@@ -15,10 +14,10 @@ import { tipoLesaoEnum } from './enums.js';
 import { hospitals } from './hospitals.js';
 
 // Tabelas de referência (especialidades, diagnósticos, etc.) partilham a mesma
-// forma: id + nome, um `hospital_id` opcional (NULL = referência global), um
-// flag `is_system` e os timestamps. As três funções abaixo constroem essa forma
-// uma única vez, para que o padrão — em especial o predicado dos índices únicos
-// parciais — não divirja entre tabelas quando uma delas for editada.
+// forma: id + nome, um `hospital_id` opcional (NULL = referência global) e os
+// timestamps. As três funções abaixo constroem essa forma uma única vez, para
+// que o padrão — em especial o predicado dos índices únicos parciais — não
+// divirja entre tabelas quando uma delas for editada.
 //
 // Os builders de coluna são criados de novo em cada chamada (funções, não
 // objetos partilhados) para que cada tabela tenha a sua própria instância e o
@@ -32,11 +31,10 @@ function refHeadColumns() {
   };
 }
 
-/** Colunas finais comuns: hospital_id (opcional) + is_system. */
+/** Coluna final comum: hospital_id (opcional). */
 function refScopeColumns() {
   return {
     hospitalId: uuid('hospital_id').references(() => hospitals.id, { onDelete: 'restrict' }),
-    isSystem: boolean('is_system').notNull().default(false),
   };
 }
 

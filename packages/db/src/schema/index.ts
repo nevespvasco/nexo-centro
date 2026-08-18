@@ -6,5 +6,4 @@ export * from './utentes.js';
 export * from './registos.js';
 export * from './portfolio.js';
 export * from './admin.js';
-export * from './permissions.js';
 export * from './relations.js';

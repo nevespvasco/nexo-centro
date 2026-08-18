@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { index, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { timestamps } from './_helpers.js';
-import { hospitalRoleEnum, membershipStatusEnum } from './enums.js';
+import { membershipStatusEnum } from './enums.js';
 import { users } from './users.js';
 
 export const hospitals = pgTable(
@@ -25,7 +25,6 @@ export const hospitalUser = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),
     status: membershipStatusEnum('status').notNull().default('pending'),
-    papel: hospitalRoleEnum('papel').notNull().default('membro'),
     requestedAt: timestamp('requested_at', { withTimezone: true }).notNull().defaultNow(),
     approvedByUserId: uuid('approved_by_user_id').references(() => users.id, {
       onDelete: 'set null',
