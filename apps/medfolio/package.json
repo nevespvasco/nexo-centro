@@ -11,8 +11,11 @@
   },
   "dependencies": {
     "@nexo-centro/schemas": "workspace:*",
+    "primeicons": "^8.0.0",
+    "primereact": "10.9.8",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",

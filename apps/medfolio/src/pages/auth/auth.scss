@@ -1,0 +1,140 @@
+.auth-page {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 24px;
+  background: var(--bg-canvas);
+}
+
+.auth-page__wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight);
+  color: var(--text-strong);
+  text-decoration: none;
+}
+.auth-page__wordmark .pi {
+  color: var(--primary);
+  font-size: var(--fs-2xl);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  padding: clamp(24px, 5vw, 36px);
+}
+
+.auth-card__title {
+  margin: 0 0 4px;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-tight);
+  color: var(--text-strong);
+}
+.auth-card__subtitle {
+  margin: 0 0 24px;
+  font-size: var(--fs-base);
+  line-height: var(--lh-normal);
+  color: var(--text-muted);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.auth-field label {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--text-body);
+}
+.auth-field .p-inputtext,
+.auth-field .p-password,
+.auth-field .p-password-input {
+  width: 100%;
+}
+
+.auth-form__error {
+  font-size: var(--fs-sm);
+  color: #dc2626;
+  line-height: var(--lh-snug);
+}
+
+.auth-form__links {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--fs-sm);
+}
+.auth-form__links a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: var(--fw-medium);
+}
+.auth-form__links a:hover {
+  text-decoration: underline;
+}
+
+.auth-form__hint {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-normal);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ── 2FA setup ─────────────────────────────────────────────────────────── */
+.twofactor-qr {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.twofactor-qr img {
+  width: 200px;
+  height: 200px;
+}
+.twofactor-secret {
+  display: block;
+  text-align: center;
+  font-family: monospace;
+  font-size: var(--fs-sm);
+  color: var(--text-body);
+  word-break: break-all;
+  margin-bottom: 20px;
+}
+
+.recovery-codes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 16px;
+  background: var(--bg-canvas);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+.recovery-codes__code {
+  font-family: monospace;
+  font-size: var(--fs-sm);
+  color: var(--text-strong);
+  text-align: center;
+}

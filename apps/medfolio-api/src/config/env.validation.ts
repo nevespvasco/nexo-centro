@@ -8,11 +8,17 @@ export interface EnvironmentVariables {
   APP_ENCRYPTION_KEY?: string;
   APP_ENCRYPTION_KEY_VERSION?: number;
   APP_ENCRYPTION_KEYS_RETIRED?: string;
+  JWT_SECRET?: string;
+  JWT_EXPIRES_IN: string;
+  TWO_FACTOR_CHALLENGE_TTL: string;
+  FRONTEND_URL: string;
 }
 
 const NODE_ENVS = ['development', 'test', 'production'] as const;
 
-export function validate(config: Record<string, unknown>): EnvironmentVariables {
+export function validate(
+  config: Record<string, unknown>,
+): EnvironmentVariables {
   const databaseUrl = config.DATABASE_URL;
   if (typeof databaseUrl !== 'string' || databaseUrl.length === 0) {
     throw new Error('DATABASE_URL is required');
@@ -40,7 +46,9 @@ export function validate(config: Record<string, unknown>): EnvironmentVariables 
   if (config.PORT !== undefined) {
     port = Number(config.PORT);
     if (!Number.isInteger(port) || port <= 0 || port > 65535) {
-      throw new Error(`PORT must be a valid port number (got "${String(config.PORT)}")`);
+      throw new Error(
+        `PORT must be a valid port number (got "${String(config.PORT)}")`,
+      );
     }
   }
 
@@ -51,7 +59,8 @@ export function validate(config: Record<string, unknown>): EnvironmentVariables 
   // check and the crypto runtime. Required in production; optional elsewhere so
   // local dev without 2FA still boots.
   const encryptionKey =
-    typeof config.APP_ENCRYPTION_KEY === 'string' && config.APP_ENCRYPTION_KEY !== ''
+    typeof config.APP_ENCRYPTION_KEY === 'string' &&
+    config.APP_ENCRYPTION_KEY !== ''
       ? config.APP_ENCRYPTION_KEY
       : undefined;
   const encryptionKeysRetired =
@@ -83,15 +92,50 @@ export function validate(config: Record<string, unknown>): EnvironmentVariables 
     }
   }
 
+  // Signing secret for session/challenge JWTs (cookies). Required in
+  // production, same rationale as APP_ENCRYPTION_KEY — local dev without auth
+  // configured should still boot.
+  const jwtSecret =
+    typeof config.JWT_SECRET === 'string' && config.JWT_SECRET !== ''
+      ? config.JWT_SECRET
+      : undefined;
+  if (!jwtSecret && nodeEnv === 'production') {
+    throw new Error('JWT_SECRET is required in production');
+  }
+
+  const jwtExpiresIn =
+    typeof config.JWT_EXPIRES_IN === 'string' && config.JWT_EXPIRES_IN !== ''
+      ? config.JWT_EXPIRES_IN
+      : '7d';
+
+  const twoFactorChallengeTtl =
+    typeof config.TWO_FACTOR_CHALLENGE_TTL === 'string' &&
+    config.TWO_FACTOR_CHALLENGE_TTL !== ''
+      ? config.TWO_FACTOR_CHALLENGE_TTL
+      : '5m';
+
+  const frontendUrl =
+    typeof config.FRONTEND_URL === 'string' && config.FRONTEND_URL !== ''
+      ? config.FRONTEND_URL
+      : 'http://localhost:5173';
+
   return {
     ...config,
     DATABASE_URL: databaseUrl,
     NODE_ENV: nodeEnv as EnvironmentVariables['NODE_ENV'],
     PORT: port,
-    CORS_ORIGIN: typeof config.CORS_ORIGIN === 'string' ? config.CORS_ORIGIN : undefined,
-    APP_ENCRYPTION_KEY: typeof encryptionKey === 'string' ? encryptionKey : undefined,
+    CORS_ORIGIN:
+      typeof config.CORS_ORIGIN === 'string' ? config.CORS_ORIGIN : undefined,
+    APP_ENCRYPTION_KEY:
+      typeof encryptionKey === 'string' ? encryptionKey : undefined,
     APP_ENCRYPTION_KEY_VERSION: encryptionKeyVersion,
     APP_ENCRYPTION_KEYS_RETIRED:
-      typeof encryptionKeysRetired === 'string' ? encryptionKeysRetired : undefined,
+      typeof encryptionKeysRetired === 'string'
+        ? encryptionKeysRetired
+        : undefined,
+    JWT_SECRET: jwtSecret,
+    JWT_EXPIRES_IN: jwtExpiresIn,
+    TWO_FACTOR_CHALLENGE_TTL: twoFactorChallengeTtl,
+    FRONTEND_URL: frontendUrl,
   };
 }

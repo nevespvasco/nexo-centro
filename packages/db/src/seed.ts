@@ -29,7 +29,9 @@ if (!databaseUrl) {
   throw new Error('DATABASE_URL is required — see the "Base de dados (Drizzle)" section in README.md.');
 }
 
-const DEV_PASSWORD_HASH = '$2b$10$K3nWQpZ8h1yYQ8s2FQqXeOeYQmVQx1zQ8yq0G8bJb5x1yLzq0Zt9O';
+// bcrypt hash da password "medfolio123" — usa-a para testar o login em dev,
+// tanto para os users seed como para os admin_users seed.
+const DEV_PASSWORD_HASH = '$2b$10$q/dQjPm8aC5er5YeKBx5jeSoaqaru8iI3gEjiRqpeRtQrS30MAzbi';
 
 async function main() {
   const { db, pool } = createDb(databaseUrl!);

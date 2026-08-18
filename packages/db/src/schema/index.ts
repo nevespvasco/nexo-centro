@@ -1,5 +1,6 @@
 export * from './enums.js';
 export * from './users.js';
+export * from './auth.js';
 export * from './hospitals.js';
 export * from './reference.js';
 export * from './utentes.js';

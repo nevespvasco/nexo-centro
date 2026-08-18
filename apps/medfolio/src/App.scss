@@ -1,0 +1,13 @@
+.health-card {
+  width: 100%;
+  max-width: 420px;
+  margin-top: 24px;
+}
+.health-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}

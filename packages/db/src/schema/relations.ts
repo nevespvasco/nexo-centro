@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import { adminUsers } from './admin.js';
+import { passwordResetTokens } from './auth.js';
 import { hospitalUser, hospitals } from './hospitals.js';
 import { atividadesCientificas, formacoes } from './portfolio.js';
 import {
@@ -26,6 +27,14 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   registoCirurgicos: many(registoCirurgicos),
   atividadesCientificas: many(atividadesCientificas),
   formacoes: many(formacoes),
+  passwordResetTokens: many(passwordResetTokens),
+}));
+
+export const passwordResetTokensRelations = relations(passwordResetTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [passwordResetTokens.userId],
+    references: [users.id],
+  }),
 }));
 
 export const hospitalsRelations = relations(hospitals, ({ many }) => ({

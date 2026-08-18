@@ -42,6 +42,13 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       DATABASE_URL: ${DATABASE_URL:?define DATABASE_URL no .env (copia de .env.example)}
       CORS_ORIGIN: ${CORS_ORIGIN:?define CORS_ORIGIN no .env (copia de .env.example)}
+      APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:-}
+      APP_ENCRYPTION_KEY_VERSION: ${APP_ENCRYPTION_KEY_VERSION:-1}
+      APP_ENCRYPTION_KEYS_RETIRED: ${APP_ENCRYPTION_KEYS_RETIRED:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      TWO_FACTOR_CHALLENGE_TTL: ${TWO_FACTOR_CHALLENGE_TTL:-5m}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
     ports:
       - "3001:3001"
     volumes: *node-volumes
@@ -60,6 +67,7 @@ services:
     working_dir: /app
     environment:
       CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-false}
+      VITE_API_PROXY_TARGET: http://api:3001
     ports:
       - "5173:5173"
     volumes: *node-volumes

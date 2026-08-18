@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 function parseCorsOrigins(value?: string): string[] {
@@ -13,6 +14,7 @@ function parseCorsOrigins(value?: string): string[] {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableShutdownHooks();
+  app.use(cookieParser());
   const origins = parseCorsOrigins(process.env.CORS_ORIGIN);
   app.enableCors({
     origin: origins.length ? origins : false,

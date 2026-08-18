@@ -1,0 +1,31 @@
+:root {
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: var(--fw-normal);
+  line-height: var(--lh-normal);
+  font-optical-sizing: auto;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--text-body);
+  background: var(--bg-canvas);
+}
+
+button {
+  font-family: inherit;
+}

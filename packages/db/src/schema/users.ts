@@ -22,6 +22,11 @@ export const users = pgTable(
     // aplicado na camada de serviço quando forem gerados.
     twoFactorRecoveryCodes: text('two_factor_recovery_codes'),
     twoFactorConfirmedAt: timestamp('two_factor_confirmed_at', { withTimezone: true }),
+    // Quando o setup de 2FA foi sugerido pela última vez (ecrã pós-login,
+    // saltável). Distingue "primeiro login, ainda não sugerimos" de "já
+    // sugerimos (ou saltou), não voltar a perguntar" quando twoFactorConfirmedAt
+    // continua null.
+    twoFactorPromptedAt: timestamp('two_factor_prompted_at', { withTimezone: true }),
     ...timestamps,
   },
   (table) => [
@@ -45,6 +50,7 @@ export const usersSafeColumns = {
   especialidadeId: users.especialidadeId,
   emailVerifiedAt: users.emailVerifiedAt,
   twoFactorConfirmedAt: users.twoFactorConfirmedAt,
+  twoFactorPromptedAt: users.twoFactorPromptedAt,
   createdAt: users.createdAt,
   updatedAt: users.updatedAt,
   deletedAt: users.deletedAt,

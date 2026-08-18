@@ -1,0 +1,97 @@
+/* medfolio design tokens — sampled from the design frame (plans/01-design-spec.md). */
+:root {
+  /* Surfaces */
+  --bg-canvas: #f7f8fa;
+  --surface-card: #ffffff;
+  --border: #dadee6;
+
+  /* Brand / accent */
+  --primary: #059669;
+  --primary-hover: #047a56;
+  --primary-contrast: #ffffff;
+  --avatar-bg: #e0efe8;
+  --avatar-fg: #059669;
+  --status-online: #059669;
+
+  /* Text & icons */
+  --text-strong: #1f2633;
+  --text-body: #475166;
+  --text-muted: #606b80;
+  --text-subtle: #98a1b3;
+  --text-faint: #bbc1cd;
+  --chevron: #cbd2dc;
+
+  /* Interaction */
+  --hover-bg: #eff1f4;
+
+  /* Layout metrics */
+  --minirail-w: 72px;
+  --navpanel-w: 335px;
+  --topbar-h: 72px;
+  --footer-h: 36px;
+  --navitem-h: 32px;
+  --panel-pad: 16px;
+  --radius-item: 8px;
+  --radius-avatar: 10px;
+
+  /* Effects */
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04);
+
+  /* ── Typography ──────────────────────────────────────────────────────── */
+  --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Type scale (rem, 16px base) — respects the user's browser font size. */
+  --fs-xs: 0.75rem; /* 12px — meta, captions */
+  --fs-sm: 0.8125rem; /* 13px — footer, empty states */
+  --fs-base: 0.875rem; /* 14px — body / nav / UI default */
+  --fs-lg: 1.125rem; /* 18px — wordmark */
+  --fs-xl: 1.25rem; /* 20px — section lead */
+  --fs-2xl: 1.5rem; /* 24px — page title */
+
+  /* Weights */
+  --fw-normal: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* Line heights */
+  --lh-tight: 1.25; /* headings */
+  --lh-snug: 1.4; /* dense UI labels */
+  --lh-normal: 1.5; /* body copy */
+
+  /* Letter spacing */
+  --ls-tight: -0.01em; /* large / bold headings */
+  --ls-eyebrow: 0.05em; /* uppercase section labels */
+}
+
+/* Re-point PrimeReact widget accent (buttons, tags, focus rings) to emerald. */
+:root {
+  --primary-color: #059669;
+  --primary-color-text: #ffffff;
+  --highlight-bg: #e0efe8;
+  --highlight-text-color: #047a56;
+  /* Keep PrimeReact widgets on the same typeface as the shell. */
+  --font-family: var(--sans);
+}
+
+/* Dark theme (Night Mode) — surfaces inverted, --primary emerald kept. */
+:root[data-theme='dark'] {
+  --bg-canvas: #10141b;
+  --surface-card: #171c26;
+  --border: #2a313d;
+
+  --avatar-bg: #10352a;
+  --avatar-fg: #34d399;
+  --status-online: #34d399;
+  --primary: #059669;
+  --primary-hover: #10b981;
+
+  --text-strong: #f1f4f9;
+  --text-body: #aab3c2;
+  --text-muted: #8892a3;
+  --text-subtle: #6c7688;
+  --text-faint: #5a6474;
+  --chevron: #4a5464;
+
+  --hover-bg: #1e2530;
+}
