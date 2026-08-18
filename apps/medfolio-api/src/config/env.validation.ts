@@ -1,3 +1,5 @@
+import { buildKeyRing } from '@nexo-centro/db';
+
 export interface EnvironmentVariables {
   DATABASE_URL: string;
   PORT: number;
@@ -43,59 +45,39 @@ export function validate(config: Record<string, unknown>): EnvironmentVariables 
   }
 
   // AES-256 key (base64 of 32 bytes) used to encrypt secrets at rest, e.g. the
-  // 2FA `two_factor_secret`. Required in production; optional elsewhere so local
-  // dev without 2FA still boots. Validated whenever present.
-  const encryptionKey = config.APP_ENCRYPTION_KEY;
-  if (encryptionKey !== undefined) {
-    if (typeof encryptionKey !== 'string' || Buffer.from(encryptionKey, 'base64').length !== 32) {
-      throw new Error(
-        'APP_ENCRYPTION_KEY must be a base64-encoded 32-byte key (generate with: openssl rand -base64 32)',
-      );
-    }
-  } else if (nodeEnv === 'production') {
-    throw new Error('APP_ENCRYPTION_KEY is required in production');
-  }
+  // 2FA `two_factor_secret`, plus its version and any retired keys. The whole
+  // key ring is parsed and validated by the shared buildKeyRing() exported from
+  // @nexo-centro/db, so the accepted format never drifts between this boot-time
+  // check and the crypto runtime. Required in production; optional elsewhere so
+  // local dev without 2FA still boots.
+  const encryptionKey =
+    typeof config.APP_ENCRYPTION_KEY === 'string' && config.APP_ENCRYPTION_KEY !== ''
+      ? config.APP_ENCRYPTION_KEY
+      : undefined;
+  const encryptionKeysRetired =
+    typeof config.APP_ENCRYPTION_KEYS_RETIRED === 'string' &&
+    config.APP_ENCRYPTION_KEYS_RETIRED !== ''
+      ? config.APP_ENCRYPTION_KEYS_RETIRED
+      : undefined;
 
-  // Active key version, bumped when APP_ENCRYPTION_KEY is rotated. Defaults to 1.
   let encryptionKeyVersion = 1;
-  const encryptionKeyVersionRaw = config.APP_ENCRYPTION_KEY_VERSION;
-  if (encryptionKeyVersionRaw !== undefined && encryptionKeyVersionRaw !== '') {
-    encryptionKeyVersion = Number(encryptionKeyVersionRaw);
-    if (!Number.isInteger(encryptionKeyVersion) || encryptionKeyVersion < 1) {
-      throw new Error(
-        `APP_ENCRYPTION_KEY_VERSION must be a positive integer (got "${String(encryptionKeyVersionRaw)}")`,
-      );
+  if (encryptionKey !== undefined) {
+    const ring = buildKeyRing({
+      key: encryptionKey,
+      version: config.APP_ENCRYPTION_KEY_VERSION as string | number | undefined,
+      retired: encryptionKeysRetired,
+    });
+    encryptionKeyVersion = ring.activeVersion;
+  } else {
+    if (nodeEnv === 'production') {
+      throw new Error('APP_ENCRYPTION_KEY is required in production');
     }
-  }
-
-  // Retired keys kept only to decrypt data written before a key rotation, in
-  // the format "1:<base64>,2:<base64>". Never used to encrypt new data.
-  const encryptionKeysRetired = config.APP_ENCRYPTION_KEYS_RETIRED;
-  if (encryptionKeysRetired !== undefined && encryptionKeysRetired !== '') {
-    if (typeof encryptionKeysRetired !== 'string') {
-      throw new Error('APP_ENCRYPTION_KEYS_RETIRED must be a string');
-    }
-    for (const entry of encryptionKeysRetired.split(',').map((e) => e.trim()).filter(Boolean)) {
-      const separatorIndex = entry.indexOf(':');
-      if (separatorIndex === -1) {
+    const versionRaw = config.APP_ENCRYPTION_KEY_VERSION;
+    if (versionRaw !== undefined && versionRaw !== '') {
+      encryptionKeyVersion = Number(versionRaw);
+      if (!Number.isInteger(encryptionKeyVersion) || encryptionKeyVersion < 1) {
         throw new Error(
-          `APP_ENCRYPTION_KEYS_RETIRED entry must be "version:base64key" (got "${entry}")`,
-        );
-      }
-      const versionStr = entry.slice(0, separatorIndex);
-      const keyB64 = entry.slice(separatorIndex + 1);
-      const version = Number(versionStr);
-      if (!Number.isInteger(version) || version < 1) {
-        throw new Error(`APP_ENCRYPTION_KEYS_RETIRED has an invalid version ("${versionStr}")`);
-      }
-      if (version === encryptionKeyVersion) {
-        throw new Error(
-          `APP_ENCRYPTION_KEYS_RETIRED cannot reuse the active key version (${encryptionKeyVersion})`,
-        );
-      }
-      if (Buffer.from(keyB64, 'base64').length !== 32) {
-        throw new Error(
-          `APP_ENCRYPTION_KEYS_RETIRED key for version ${version} must decode to 32 bytes`,
+          `APP_ENCRYPTION_KEY_VERSION must be a positive integer (got "${String(versionRaw)}")`,
         );
       }
     }

@@ -14,6 +14,7 @@
     "docker:prod": "docker compose -f docker-compose.prod.yml up --build -d",
     "db:generate": "pnpm --filter @nexo-centro/db db:generate",
     "db:migrate": "pnpm --filter @nexo-centro/db db:migrate",
+    "db:migrate:local": "pnpm --filter @nexo-centro/db db:migrate:local",
     "db:push": "pnpm --filter @nexo-centro/db db:push",
     "db:studio": "pnpm --filter @nexo-centro/db db:studio",
     "db:seed": "pnpm --filter @nexo-centro/db db:seed"

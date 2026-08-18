@@ -12,11 +12,13 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/medfolio-api/package.json ./apps/medfolio-api/package.json
 COPY apps/medfolio/package.json ./apps/medfolio/package.json
 COPY packages/db/package.json ./packages/db/package.json
+COPY packages/schemas/package.json ./packages/schemas/package.json
 RUN --mount=type=cache,target=/pnpm/store \
     pnpm install --frozen-lockfile --filter medfolio-api...
 
 FROM deps AS build
 COPY packages/db ./packages/db
+COPY packages/schemas ./packages/schemas
 COPY apps/medfolio-api ./apps/medfolio-api
 RUN pnpm --filter medfolio-api... build
 

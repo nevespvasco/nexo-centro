@@ -42,36 +42,42 @@ function decodeKey(envVar: string, raw: string): Buffer {
   return key;
 }
 
-interface KeyRing {
+export interface KeyRing {
   activeVersion: number;
   keys: Map<number, Buffer>;
 }
 
-let cachedRing: KeyRing | null = null;
+/** Valores brutos das variáveis de ambiente que definem o key ring. */
+export interface KeyRingEnv {
+  key: string | undefined;
+  version: string | number | undefined;
+  retired: string | undefined;
+}
 
-function loadKeyRing(): KeyRing {
-  if (cachedRing) return cachedRing;
-
-  const raw = process.env[KEY_ENV];
-  if (!raw) {
+/**
+ * Constrói e valida o key ring a partir dos valores de ambiente. Fonte única
+ * de verdade para o formato de `APP_ENCRYPTION_KEY(_VERSION|S_RETIRED)` —
+ * usada tanto pelo runtime de crypto como pela validação de ambiente da API,
+ * para que as regras não divirjam entre os dois.
+ */
+export function buildKeyRing(env: KeyRingEnv): KeyRing {
+  if (!env.key) {
     throw new Error(`${KEY_ENV} é obrigatória para encriptar/desencriptar segredos.`);
   }
-  const activeKey = decodeKey(KEY_ENV, raw);
+  const activeKey = decodeKey(KEY_ENV, env.key);
 
-  const versionRaw = process.env[VERSION_ENV];
   let activeVersion = 1;
-  if (versionRaw !== undefined && versionRaw !== '') {
-    activeVersion = Number(versionRaw);
+  if (env.version !== undefined && env.version !== '') {
+    activeVersion = Number(env.version);
     if (!Number.isInteger(activeVersion) || activeVersion < 1) {
-      throw new Error(`${VERSION_ENV} tem de ser um inteiro >= 1 (recebeu "${versionRaw}").`);
+      throw new Error(`${VERSION_ENV} tem de ser um inteiro >= 1 (recebeu "${String(env.version)}").`);
     }
   }
 
   const keys = new Map<number, Buffer>([[activeVersion, activeKey]]);
 
-  const retiredRaw = process.env[RETIRED_ENV];
-  if (retiredRaw) {
-    for (const entry of retiredRaw.split(',').map((e) => e.trim()).filter(Boolean)) {
+  if (env.retired) {
+    for (const entry of env.retired.split(',').map((e) => e.trim()).filter(Boolean)) {
       const separatorIndex = entry.indexOf(':');
       if (separatorIndex === -1) {
         throw new Error(`${RETIRED_ENV} malformada, esperado "versao:chave" (recebeu "${entry}").`);
@@ -91,7 +97,18 @@ function loadKeyRing(): KeyRing {
     }
   }
 
-  cachedRing = { activeVersion, keys };
+  return { activeVersion, keys };
+}
+
+let cachedRing: KeyRing | null = null;
+
+function loadKeyRing(): KeyRing {
+  if (cachedRing) return cachedRing;
+  cachedRing = buildKeyRing({
+    key: process.env[KEY_ENV],
+    version: process.env[VERSION_ENV],
+    retired: process.env[RETIRED_ENV],
+  });
   return cachedRing;
 }
 
@@ -146,7 +163,10 @@ export function decryptSecret(payload: string): string {
   } catch {
     throw new Error('Payload encriptado malformado.');
   }
-  if (iv.length !== IV_LENGTH || tag.length !== TAG_LENGTH || ciphertext.length < 1) {
+  // Não se valida `ciphertext.length` — o GCM produz ciphertext de 0 bytes para
+  // plaintext vazio, e o auth tag continua a autenticar o payload. Rejeitar
+  // comprimento 0 quebrava o round-trip de uma string vazia.
+  if (iv.length !== IV_LENGTH || tag.length !== TAG_LENGTH) {
     throw new Error('Payload encriptado malformado.');
   }
 
