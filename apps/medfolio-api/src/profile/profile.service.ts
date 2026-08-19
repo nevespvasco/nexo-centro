@@ -4,10 +4,14 @@ import * as bcrypt from 'bcryptjs';
 import { asc, eq, isNull } from 'drizzle-orm';
 import { DRIZZLE } from '../database/drizzle.constants';
 import type { SafeUser } from '../auth/auth.service';
+import { HospitalsService } from '../hospitals/hospitals.service';
 
 @Injectable()
 export class ProfileService {
-  constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: Database,
+    private readonly hospitalsService: HospitalsService,
+  ) {}
 
   async listEspecialidades(): Promise<{ id: string; nome: string }[]> {
     return this.db
@@ -41,7 +45,7 @@ export class ProfileService {
         })
         .where(eq(users.id, userId))
         .returning(usersSafeColumns);
-      return updated;
+      return { ...updated, hasHospitalMembership: await this.hospitalsService.hasApprovedMembership(userId) };
     } catch (err) {
       throw this.mapWriteError(err);
     }

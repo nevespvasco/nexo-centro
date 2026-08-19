@@ -8,12 +8,15 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { parseDurationMs } from '../common/duration';
 import type { EnvironmentVariables } from '../config/env.validation';
 import { DRIZZLE } from '../database/drizzle.constants';
+import { HospitalsService } from '../hospitals/hospitals.service';
 import type { ChallengePayload, SessionPayload } from './auth.constants';
 import { TwoFactorService } from './two-factor.service';
 
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000; // 1h
 
-export type SafeUser = Pick<typeof users.$inferSelect, keyof typeof usersSafeColumns>;
+export type SafeUser = Pick<typeof users.$inferSelect, keyof typeof usersSafeColumns> & {
+  hasHospitalMembership: boolean;
+};
 
 export type LoginResult =
   | { status: 'challenge'; token: string; maxAgeMs: number }
@@ -33,6 +36,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService<EnvironmentVariables>,
     private readonly twoFactorService: TwoFactorService,
+    private readonly hospitalsService: HospitalsService,
   ) {
     this.sessionTtlMs = parseDurationMs(this.configService.get('JWT_EXPIRES_IN', '7d'));
     this.challengeTtlMs = parseDurationMs(this.configService.get('TWO_FACTOR_CHALLENGE_TTL', '5m'));
@@ -62,7 +66,7 @@ export class AuthService {
     return {
       status: 'ok',
       ...(await this.issueSession(user.id)),
-      user: toSafeUser(user),
+      user: await this.toSafeUserWithMembership(user),
       mustSetupTwoFactor,
     };
   }
@@ -83,7 +87,7 @@ export class AuthService {
       throw new UnauthorizedException('Utilizador não encontrado.');
     }
 
-    return { ...(await this.issueSession(user.id)), user: toSafeUser(user) };
+    return { ...(await this.issueSession(user.id)), user: await this.toSafeUserWithMembership(user) };
   }
 
   async me(userId: string): Promise<SafeUser> {
@@ -95,7 +99,7 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Utilizador não encontrado.');
     }
-    return user;
+    return { ...user, hasHospitalMembership: await this.hospitalsService.hasApprovedMembership(user.id) };
   }
 
   async forgotPassword(email: string): Promise<void> {
@@ -141,6 +145,10 @@ export class AuthService {
     });
   }
 
+  private async toSafeUserWithMembership(user: typeof users.$inferSelect): Promise<SafeUser> {
+    return { ...toSafeUser(user), hasHospitalMembership: await this.hospitalsService.hasApprovedMembership(user.id) };
+  }
+
   private async issueSession(userId: string): Promise<{ token: string; maxAgeMs: number }> {
     const payload: SessionPayload = { sub: userId, typ: 'session' };
     const token = await this.jwtService.signAsync(payload, { expiresIn: this.sessionTtlMs / 1000 });
@@ -164,10 +172,10 @@ export class AuthService {
   }
 }
 
-function toSafeUser(user: typeof users.$inferSelect): SafeUser {
+function toSafeUser(user: typeof users.$inferSelect): Omit<SafeUser, 'hasHospitalMembership'> {
   const safe: Record<string, unknown> = {};
   for (const key of Object.keys(usersSafeColumns)) {
     safe[key] = (user as Record<string, unknown>)[key];
   }
-  return safe as SafeUser;
+  return safe as Omit<SafeUser, 'hasHospitalMembership'>;
 }

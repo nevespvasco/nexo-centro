@@ -1,0 +1,102 @@
+.crud-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0 10px;
+  flex-wrap: wrap;
+}
+
+.crud-toolbar__filter {
+  flex: 1;
+  min-width: 220px;
+  max-width: 360px;
+}
+.crud-toolbar__filter .p-inputtext {
+  width: 100%;
+}
+
+.crud-table {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.crud-table .p-datatable-tbody > tr > td {
+  font-size: var(--fs-base);
+  color: var(--text-body);
+}
+
+.crud-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.crud-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.crud-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.crud-field label {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--text-body);
+}
+.crud-field .p-inputtext,
+.crud-field .p-dropdown,
+.crud-field .p-calendar,
+.crud-field .p-inputnumber {
+  width: 100%;
+}
+
+.crud-form__error {
+  font-size: var(--fs-sm);
+  color: #dc2626;
+}
+
+.crud-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.crud-detail {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+  padding: clamp(20px, 4vw, 28px);
+  max-width: 640px;
+  margin-top: 16px;
+}
+.crud-detail__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-base);
+}
+.crud-detail__row:last-child {
+  border-bottom: none;
+}
+.crud-detail__label {
+  color: var(--text-muted);
+}
+.crud-detail__value {
+  color: var(--text-strong);
+  font-weight: var(--fw-medium);
+  text-align: right;
+}
+.crud-detail__back {
+  margin-bottom: 16px;
+}

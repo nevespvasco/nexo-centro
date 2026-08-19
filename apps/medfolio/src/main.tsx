@@ -7,6 +7,7 @@ import 'primereact/resources/primereact.min.css'
 import 'primeicons/primeicons.css'
 import './styles/tokens.scss'
 import './index.scss'
+import './styles/density.scss'
 import { AuthProvider } from './lib/auth/AuthContext'
 import App from './App.tsx'
 

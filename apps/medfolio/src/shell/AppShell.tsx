@@ -4,6 +4,7 @@ import { TopBar } from './TopBar'
 import { Footer } from './Footer'
 import { MiniRail } from './MiniRail'
 import { NavPanel } from './NavPanel'
+import { RequestHospitalDialog } from './RequestHospitalDialog'
 import type { HospitalDef } from './nav.config'
 import { usePersistentState } from './usePersistentState'
 import { useTheme } from './useTheme'
@@ -21,13 +22,18 @@ export function AppShell() {
   const [isTablet, setIsTablet] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [requestOpen, setRequestOpen] = useState(false)
 
   // Load the hospitals this user has approved access to (drives the switcher).
-  useEffect(() => {
+  const loadHospitals = useCallback(() => {
     getHospitals()
       .then((list) => setHospitals(list.map((h) => ({ id: h.id, initials: h.initials, name: h.nome }))))
       .catch(() => setHospitals([]))
   }, [])
+
+  useEffect(() => {
+    loadHospitals()
+  }, [loadHospitals])
 
   // Reconcile the persisted active hospital against the loaded list: covers
   // legacy localStorage ids (the old hardcoded "mh"/"ds"), a deleted/inaccessible
@@ -96,6 +102,7 @@ export function AppShell() {
           hospitals={hospitals}
           activeHospital={activeHospital}
           onSelectHospital={setActiveHospital}
+          onRequestAccess={() => setRequestOpen(true)}
           inert={isMobile && !drawerOpen}
         />
         <NavPanel
@@ -103,7 +110,12 @@ export function AppShell() {
           onToggleCollapsed={toggleCollapsed}
           onNavigate={closeDrawer}
           inert={isMobile && !drawerOpen}
-          {...(isMobile && { hospitals, activeHospital, onSelectHospital: setActiveHospital })}
+          {...(isMobile && {
+            hospitals,
+            activeHospital,
+            onSelectHospital: setActiveHospital,
+            onRequestAccess: () => setRequestOpen(true),
+          })}
         />
         <main className="content">
           <Outlet />
@@ -111,6 +123,11 @@ export function AppShell() {
         <div className="scrim" onClick={closeDrawer} aria-hidden="true" />
       </div>
       <Footer />
+      <RequestHospitalDialog
+        visible={requestOpen}
+        onHide={() => setRequestOpen(false)}
+        onAdded={loadHospitals}
+      />
     </div>
   )
 }

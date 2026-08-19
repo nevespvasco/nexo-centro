@@ -1,0 +1,1 @@
+ALTER TABLE "utentes" ADD COLUMN "data_nascimento" date;

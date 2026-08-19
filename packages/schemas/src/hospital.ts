@@ -9,3 +9,16 @@ export const hospitalMembershipSchema = z.object({
 });
 
 export type HospitalMembership = z.infer<typeof hospitalMembershipSchema>;
+
+export const availableHospitalSchema = z.object({
+  id: z.uuid(),
+  nome: z.string(),
+});
+
+export type AvailableHospital = z.infer<typeof availableHospitalSchema>;
+
+export const requestHospitalAccessSchema = z.object({
+  hospitalId: z.uuid(),
+});
+
+export type RequestHospitalAccess = z.infer<typeof requestHospitalAccessSchema>;

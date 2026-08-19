@@ -5,6 +5,7 @@ import { AccountCard } from './AccountCard'
 import { NavSection } from './NavSection'
 import { CollapseToggle } from './CollapseToggle'
 import { HospitalAvatar } from './HospitalAvatar'
+import { HospitalAddButton } from './HospitalAddButton'
 import { usePersistentState } from './usePersistentState'
 import { useAuth } from '../lib/auth/AuthContext'
 
@@ -16,6 +17,7 @@ interface NavPanelProps {
   hospitals?: HospitalDef[]
   activeHospital?: string | null
   onSelectHospital?: (id: string) => void
+  onRequestAccess?: () => void
 }
 
 const defaultExpanded = Object.fromEntries(navSections.map((s) => [s.id, true]))
@@ -28,6 +30,7 @@ export function NavPanel({
   hospitals,
   activeHospital,
   onSelectHospital,
+  onRequestAccess,
 }: NavPanelProps) {
   const [expanded, setExpanded] = usePersistentState<Record<string, boolean>>(
     'medfolio.nav.expanded',
@@ -63,6 +66,7 @@ export function NavPanel({
               onSelect={onSelectHospital ?? (() => {})}
             />
           ))}
+          <HospitalAddButton onClick={onRequestAccess ?? (() => {})} />
         </div>
       )}
       <AccountCard

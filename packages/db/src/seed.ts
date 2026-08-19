@@ -170,8 +170,22 @@ async function main() {
       const [utenteAna, utenteCarlos] = await tx
         .insert(utentes)
         .values([
-          { nome: 'Ana Ferreira', sexo: 'feminino', processo: '100001', hospitalId: hospitalCentral.id, createdByUserId: userJoao.id },
-          { nome: 'Carlos Pinto', sexo: 'masculino', processo: '100002', hospitalId: hospitalCentral.id, createdByUserId: userJoao.id },
+          {
+            nome: 'Ana Ferreira',
+            sexo: 'feminino',
+            processo: '100001',
+            dataNascimento: '1992-03-14',
+            hospitalId: hospitalCentral.id,
+            createdByUserId: userJoao.id,
+          },
+          {
+            nome: 'Carlos Pinto',
+            sexo: 'masculino',
+            processo: '100002',
+            dataNascimento: '1965-07-22',
+            hospitalId: hospitalCentral.id,
+            createdByUserId: userJoao.id,
+          },
         ])
         .returning();
 

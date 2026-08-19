@@ -31,6 +31,8 @@ export function LoginPage() {
       const result = await login(email, password)
       if (result.status === '2fa_required') {
         setStep('2fa')
+      } else if (!result.user.hasHospitalMembership) {
+        navigate('/selecionar-hospital', { replace: true })
       } else if (result.mustSetupTwoFactor) {
         navigate('/configurar-2fa', { replace: true })
       } else {
@@ -50,7 +52,7 @@ export function LoginPage() {
     try {
       const result = await loginTwoFactor(code)
       if (result.status === 'ok') {
-        navigate(from, { replace: true })
+        navigate(result.user.hasHospitalMembership ? from : '/selecionar-hospital', { replace: true })
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível validar o código.')

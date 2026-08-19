@@ -17,7 +17,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<LoginResponse>
   loginTwoFactor: (code: string) => Promise<LoginResponse>
   logout: () => Promise<void>
-  refresh: () => Promise<void>
+  refresh: () => Promise<AuthUser | null>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -31,9 +31,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const me = await getMe()
       setUser(me)
       setStatus('authenticated')
+      return me
     } catch {
       setUser(null)
       setStatus('unauthenticated')
+      return null
     }
   }, [])
 

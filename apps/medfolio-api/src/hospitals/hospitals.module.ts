@@ -7,5 +7,6 @@ import { HospitalsService } from './hospitals.service';
   imports: [JwtModule],
   controllers: [HospitalsController],
   providers: [HospitalsService],
+  exports: [HospitalsService],
 })
 export class HospitalsModule {}

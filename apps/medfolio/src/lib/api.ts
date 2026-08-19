@@ -1,4 +1,4 @@
-import type { HospitalMembership } from '@nexo-centro/schemas';
+import type { AvailableHospital, HospitalMembership, Sexo, TipoLesao } from '@nexo-centro/schemas';
 
 export interface HealthResponse {
   status: 'ok';
@@ -54,7 +54,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const body = await res.json().catch(() => null);
     throw new ApiError(body?.message ?? res.statusText, res.status);
   }
-  return res.json();
+  // DELETE endpoints (and any other void-returning route) send an empty body,
+  // which res.json() can't parse — read as text first and only parse if non-empty.
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 const postJson = <T>(path: string, body?: unknown) =>
@@ -74,6 +77,7 @@ export interface AuthUser {
   emailVerifiedAt: string | null;
   twoFactorConfirmedAt: string | null;
   twoFactorPromptedAt: string | null;
+  hasHospitalMembership: boolean;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -155,4 +159,213 @@ export function deleteAccount(): Promise<void> {
 
 export function getHospitals(): Promise<HospitalMembership[]> {
   return request('/hospitals');
+}
+
+export function getAvailableHospitals(): Promise<AvailableHospital[]> {
+  return request('/hospitals/available');
+}
+
+export function requestHospitalAccess(hospitalId: string): Promise<void> {
+  return postJson('/hospitals/requests', { hospitalId });
+}
+
+// ── Utentes ──────────────────────────────────────────────────────────────
+
+export interface Utente {
+  id: string;
+  nome: string | null;
+  sexo: Sexo | null;
+  dataNascimento: string | null;
+  processo: string;
+  hospitalId: string;
+  createdByUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface UtenteBody {
+  nome: string;
+  processo: string;
+  sexo: Sexo | null;
+  dataNascimento: string | null;
+}
+
+export function getUtentes(): Promise<Utente[]> {
+  return request('/utentes');
+}
+
+export function getUtente(id: string): Promise<Utente> {
+  return request(`/utentes/${id}`);
+}
+
+export function createUtente(body: UtenteBody): Promise<Utente> {
+  return postJson('/utentes', body);
+}
+
+export function updateUtente(id: string, body: Partial<UtenteBody>): Promise<Utente> {
+  return patchJson(`/utentes/${id}`, body);
+}
+
+export function deleteUtente(id: string): Promise<void> {
+  return deleteJson(`/utentes/${id}`);
+}
+
+// ── Especialidades (gestão de dados) ────────────────────────────────────
+// Distinto de `getEspecialidades`/`Especialidade` acima: aquele serve o dropdown
+// de perfil (todas as especialidades, sem scope de hospital); este serve a
+// página de gestão de dados (scoped ao hospital ativo + globais).
+
+export interface EspecialidadeRow {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  hospitalId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface EspecialidadeBody {
+  nome: string;
+  descricao: string | null;
+}
+
+export function listEspecialidades(): Promise<EspecialidadeRow[]> {
+  return request('/especialidades');
+}
+
+export function getEspecialidade(id: string): Promise<EspecialidadeRow> {
+  return request(`/especialidades/${id}`);
+}
+
+export function createEspecialidade(body: EspecialidadeBody): Promise<EspecialidadeRow> {
+  return postJson('/especialidades', body);
+}
+
+export function updateEspecialidade(id: string, body: Partial<EspecialidadeBody>): Promise<EspecialidadeRow> {
+  return patchJson(`/especialidades/${id}`, body);
+}
+
+export function deleteEspecialidade(id: string): Promise<void> {
+  return deleteJson(`/especialidades/${id}`);
+}
+
+// ── Zonas anatómicas ─────────────────────────────────────────────────────
+
+export interface ZonaAnatomica {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  ordem: number;
+  hospitalId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface ZonaAnatomicaBody {
+  nome: string;
+  descricao: string | null;
+}
+
+export function getZonasAnatomicas(): Promise<ZonaAnatomica[]> {
+  return request('/zonas-anatomicas');
+}
+
+export function getZonaAnatomica(id: string): Promise<ZonaAnatomica> {
+  return request(`/zonas-anatomicas/${id}`);
+}
+
+export function createZonaAnatomica(body: ZonaAnatomicaBody): Promise<ZonaAnatomica> {
+  return postJson('/zonas-anatomicas', body);
+}
+
+export function updateZonaAnatomica(id: string, body: Partial<ZonaAnatomicaBody>): Promise<ZonaAnatomica> {
+  return patchJson(`/zonas-anatomicas/${id}`, body);
+}
+
+export function deleteZonaAnatomica(id: string): Promise<void> {
+  return deleteJson(`/zonas-anatomicas/${id}`);
+}
+
+// ── Diagnósticos ─────────────────────────────────────────────────────────
+
+export interface Diagnostico {
+  id: string;
+  nome: string;
+  zonaAnatomicaId: string | null;
+  zonaAnatomicaNome: string | null;
+  tipo: TipoLesao | null;
+  descricao: string | null;
+  hospitalId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface DiagnosticoBody {
+  nome: string;
+  zonaAnatomicaId: string;
+  tipo: TipoLesao;
+  descricao?: string | null;
+}
+
+export function getDiagnosticos(): Promise<Diagnostico[]> {
+  return request('/diagnosticos');
+}
+
+export function getDiagnostico(id: string): Promise<Diagnostico> {
+  return request(`/diagnosticos/${id}`);
+}
+
+export function createDiagnostico(body: DiagnosticoBody): Promise<Diagnostico> {
+  return postJson('/diagnosticos', body);
+}
+
+export function updateDiagnostico(id: string, body: Partial<DiagnosticoBody>): Promise<Diagnostico> {
+  return patchJson(`/diagnosticos/${id}`, body);
+}
+
+export function deleteDiagnostico(id: string): Promise<void> {
+  return deleteJson(`/diagnosticos/${id}`);
+}
+
+// ── Procedimentos ────────────────────────────────────────────────────────
+
+export interface Procedimento {
+  id: string;
+  nome: string;
+  especialidadeId: string | null;
+  especialidadeNome: string | null;
+  descricao: string | null;
+  hospitalId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface ProcedimentoBody {
+  especialidadeId: string;
+  nome: string;
+}
+
+export function getProcedimentos(): Promise<Procedimento[]> {
+  return request('/procedimentos');
+}
+
+export function getProcedimento(id: string): Promise<Procedimento> {
+  return request(`/procedimentos/${id}`);
+}
+
+export function createProcedimento(body: ProcedimentoBody): Promise<Procedimento> {
+  return postJson('/procedimentos', body);
+}
+
+export function updateProcedimento(id: string, body: Partial<ProcedimentoBody>): Promise<Procedimento> {
+  return patchJson(`/procedimentos/${id}`, body);
+}
+
+export function deleteProcedimento(id: string): Promise<void> {
+  return deleteJson(`/procedimentos/${id}`);
 }

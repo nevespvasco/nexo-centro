@@ -1,0 +1,55 @@
+/* Density overrides — trims PrimeReact's default (lara-light-cyan) component chrome
+   for a tighter, more compact UI. No color changes; dark theme unaffected. */
+
+/* ── DataTable ────────────────────────────────────────────────────────── */
+.p-datatable .p-datatable-thead > tr > th,
+.p-datatable .p-datatable-tbody > tr > td {
+  padding: 0.45rem 0.75rem;
+  font-size: var(--fs-base);
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+.p-button {
+  padding: 0.5rem 0.9rem;
+  font-size: var(--fs-base);
+}
+.p-button.p-button-icon-only {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+.p-button.p-button-sm,
+.crud-actions .p-button.p-button-rounded.p-button-text {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* ── Inputs ───────────────────────────────────────────────────────────── */
+.p-inputtext,
+.p-dropdown .p-dropdown-label,
+.p-inputnumber-input,
+.p-calendar .p-inputtext {
+  padding: 0.45rem 0.6rem;
+  font-size: var(--fs-base);
+}
+
+/* ── Paginator ────────────────────────────────────────────────────────── */
+.p-paginator {
+  padding: 0.4rem;
+}
+.p-paginator .p-paginator-first,
+.p-paginator .p-paginator-prev,
+.p-paginator .p-paginator-next,
+.p-paginator .p-paginator-last,
+.p-paginator .p-paginator-page {
+  min-width: 2.15rem;
+  height: 2.15rem;
+  font-size: var(--fs-sm);
+}
+
+/* ── Dialog ───────────────────────────────────────────────────────────── */
+.p-dialog .p-dialog-header {
+  padding: 1rem 1.25rem;
+}
+.p-dialog .p-dialog-content {
+  padding: 0 1.25rem 1.25rem;
+}

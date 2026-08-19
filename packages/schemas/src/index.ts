@@ -2,3 +2,8 @@ export * from './user.js';
 export * from './auth.js';
 export * from './profile.js';
 export * from './hospital.js';
+export * from './utente.js';
+export * from './especialidade.js';
+export * from './zona-anatomica.js';
+export * from './diagnostico.js';
+export * from './procedimento.js';

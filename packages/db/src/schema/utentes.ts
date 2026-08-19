@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { index, pgTable, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import { date, index, pgTable, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { timestamps } from './_helpers.js';
 import { sexoEnum } from './enums.js';
 import { hospitals } from './hospitals.js';
@@ -12,6 +12,7 @@ export const utentes = pgTable(
     // Nullable de propósito (RGPD): permite anonimizar mantendo o registo clínico.
     nome: varchar('nome', { length: 255 }),
     sexo: sexoEnum('sexo'),
+    dataNascimento: date('data_nascimento'),
     // Identificador do processo hospitalar — guardado como texto para preservar
     // zeros à esquerda e não ficar limitado ao intervalo de um integer.
     processo: varchar('processo', { length: 255 }).notNull(),

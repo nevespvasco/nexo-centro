@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import type { EnvironmentVariables } from '../config/env.validation';
+import { HospitalsModule } from '../hospitals/hospitals.module';
 import { ProfileController } from './profile.controller';
 import { ProfileService } from './profile.service';
 
@@ -14,6 +15,7 @@ import { ProfileService } from './profile.service';
         secret: config.get('JWT_SECRET'),
       }),
     }),
+    HospitalsModule,
   ],
   controllers: [ProfileController],
   providers: [ProfileService],
