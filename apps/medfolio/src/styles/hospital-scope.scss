@@ -1,0 +1,37 @@
+.hospital-scope { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 14px 0 20px; }
+.hospital-scope__label { font-weight: 700; color: var(--text-strong); }
+.hospital-scope__actions, .hospital-scope__footer { display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
+.hospital-scope__search { width: 100%; margin: 8px 0; }
+.hospital-scope__list { max-height: min(45vh, 360px); overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+.hospital-scope__item { display: flex; align-items: center; gap: 10px; padding: 10px; cursor: pointer; }
+.hospital-scope__item + .hospital-scope__item { border-top: 1px solid var(--border); }
+.hospital-scope__item:hover { background: var(--hover-bg); }
+.hospital-scope__item label { flex: 1; cursor: pointer; }
+.hospital-scope__only { border: 0; background: transparent; color: var(--primary); cursor: pointer; font-weight: 700; }
+.scope-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0; }
+.scope-panel { margin: 18px 0 28px; }
+.scope-bars { display: grid; gap: 10px; margin: 14px 0; }
+.scope-bar-row { display: grid; grid-template-columns: minmax(100px, 190px) minmax(20px, 1fr) 70px; align-items: center; gap: 10px; }
+.scope-bar-row > div { height: 20px; background: var(--primary); border-radius: 4px; }
+.scope-bar-row strong { text-align: right; }
+.export-summary { display: grid; grid-template-columns: 125px 1fr; gap: 10px; }
+.export-summary dt { font-weight: 700; }
+.export-summary dd { margin: 0; overflow-wrap: anywhere; }
+/* Align the management-scope row to the same content column as .page
+   (width min(1480px), centered, matching horizontal padding) so its input
+   and "Pedir acesso" button line up with the page title/toolbar below it. */
+.shell .content .management-scope {
+  width: min(1480px, 100%);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: clamp(24px, 3vw, 42px) clamp(18px, 3vw, 44px);
+  padding-bottom: 0;
+}
+.management-scope label { font-weight: 700; }
+.management-scope .p-dropdown { min-width: min(100%, 250px); }
+/* Avoid doubling the top gap: the page already pads its top, so when it
+   follows the management row, tighten it to a single rhythm step. */
+.shell .content .management-scope + .page { padding-top: clamp(14px, 1.6vw, 22px); }
