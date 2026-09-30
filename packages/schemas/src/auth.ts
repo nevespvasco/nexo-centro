@@ -1,7 +1,7 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const loginSchema = z.object({
-  email: z.email().max(255),
+  email: z.email().trim().toLowerCase().max(255),
   password: z.string().min(1).max(255),
 });
 
@@ -10,12 +10,20 @@ export const twoFactorCodeSchema = z.object({
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.email().max(255),
+  email: z.email().trim().toLowerCase().max(255),
 });
 
+export const strongPasswordSchema = z
+  .string()
+  .min(12, "A palavra-passe deve ter pelo menos 12 caracteres.")
+  .max(72)
+  .refine((value) => new TextEncoder().encode(value).length <= 72, {
+    message: "A palavra-passe não pode ultrapassar 72 bytes.",
+  });
+
 export const resetPasswordSchema = z.object({
-  token: z.string().min(1),
-  password: z.string().min(8).max(255),
+  token: z.string().regex(/^[0-9a-f]{64}$/i, "Token inválido."),
+  password: strongPasswordSchema,
 });
 
 export const twoFactorConfirmSchema = z.object({

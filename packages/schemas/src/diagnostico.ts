@@ -1,6 +1,6 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-export const tipoLesaoSchema = z.enum(['benigno', 'maligno']);
+export const tipoLesaoSchema = z.enum(["benigno", "maligno"]);
 
 /** Shape of a persisted diagnóstico, mirroring the `diagnosticos` table in @nexo-centro/db. */
 export const diagnosticoSchema = z.object({

@@ -17,7 +17,10 @@
     "db:migrate:local": "pnpm --filter @nexo-centro/db db:migrate:local",
     "db:push": "pnpm --filter @nexo-centro/db db:push",
     "db:studio": "pnpm --filter @nexo-centro/db db:studio",
-    "db:seed": "pnpm --filter @nexo-centro/db db:seed"
+    "db:seed": "pnpm --filter @nexo-centro/db db:seed",
+    "db:grant-approver": "pnpm --filter @nexo-centro/db db:grant-approver",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
   },
   "keywords": [],
   "author": "",

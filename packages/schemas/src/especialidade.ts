@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /** Shape of a persisted especialidade, mirroring the `especialidades` table in @nexo-centro/db. */
 export const especialidadeSchema = z.object({

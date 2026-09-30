@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from 'primereact/button'
 import { Password } from 'primereact/password'
 import { ApiError, postResetPassword } from '../../lib/api'
-import './auth.scss'
+import { AuthLayout } from './AuthLayout'
 
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
@@ -35,13 +35,12 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <div className="auth-page">
+    <AuthLayout>
       <Link to="/login" className="auth-page__wordmark">
         <i className="pi pi-heart-fill" aria-hidden="true" />
         MedFolio
       </Link>
-      <div className="auth-card">
-        <h1 className="auth-card__title">Redefinir palavra-passe</h1>
+      <h1 className="auth-card__title">Redefinir palavra-passe</h1>
         <p className="auth-card__subtitle">Define uma nova palavra-passe para a tua conta.</p>
         {!token ? (
           <p className="auth-form__hint">Link inválido. Pede um novo em "Esqueci-me da palavra-passe".</p>
@@ -75,7 +74,6 @@ export function ResetPasswordPage() {
             <Button type="submit" label="Redefinir palavra-passe" loading={loading} />
           </form>
         )}
-      </div>
-    </div>
+    </AuthLayout>
   )
 }

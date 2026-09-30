@@ -50,6 +50,34 @@
       "when": 1787093630672,
       "tag": "0006_kind_ultimatum",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790720874178,
+      "tag": "0007_cynical_leper_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790721765220,
+      "tag": "0008_bent_winter_soldier",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790722315363,
+      "tag": "0009_nostalgic_malice",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790792088109,
+      "tag": "0010_square_madame_web",
+      "breakpoints": true
     }
   ]
 }

@@ -10,7 +10,9 @@ const UNIT_MS: Record<string, number> = {
 export function parseDurationMs(input: string): number {
   const match = /^(\d+)\s*(ms|s|m|h|d)$/.exec(input.trim());
   if (!match) {
-    throw new Error(`Duração inválida: "${input}" (formato esperado: "7d", "5m", "30s"...)`);
+    throw new Error(
+      `Duração inválida: "${input}" (formato esperado: "7d", "5m", "30s"...)`,
+    );
   }
   return Number(match[1]) * UNIT_MS[match[2]];
 }

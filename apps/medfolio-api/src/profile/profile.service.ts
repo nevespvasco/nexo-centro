@@ -1,7 +1,12 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { type Database, especialidades, users, usersSafeColumns } from '@nexo-centro/db';
+import {
+  type Database,
+  especialidades,
+  users,
+  usersSafeColumns,
+} from '@nexo-centro/db';
 import * as bcrypt from 'bcryptjs';
-import { asc, eq, isNull } from 'drizzle-orm';
+import { asc, eq, isNull, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../database/drizzle.constants';
 import type { SafeUser } from '../auth/auth.service';
 import { HospitalsService } from '../hospitals/hospitals.service';
@@ -23,7 +28,11 @@ export class ProfileService {
 
   async update(
     userId: string,
-    payload: { nome: string | null; email: string; especialidadeId: string | null },
+    payload: {
+      nome: string | null;
+      email: string;
+      especialidadeId: string | null;
+    },
   ): Promise<SafeUser> {
     const [current] = await this.db
       .select({ email: users.email })
@@ -45,13 +54,21 @@ export class ProfileService {
         })
         .where(eq(users.id, userId))
         .returning(usersSafeColumns);
-      return { ...updated, hasHospitalMembership: await this.hospitalsService.hasApprovedMembership(userId) };
+      return {
+        ...updated,
+        hasHospitalMembership:
+          await this.hospitalsService.hasApprovedMembership(userId),
+      };
     } catch (err) {
       throw this.mapWriteError(err);
     }
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
     const [user] = await this.db
       .select({ password: users.password })
       .from(users)
@@ -61,12 +78,24 @@ export class ProfileService {
       throw new BadRequestException('Password atual incorreta.');
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-    await this.db.update(users).set({ password: passwordHash }).where(eq(users.id, userId));
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.db
+      .update(users)
+      .set({
+        password: passwordHash,
+        sessionVersion: sql`${users.sessionVersion} + 1`,
+      })
+      .where(eq(users.id, userId));
   }
 
   async deleteAccount(userId: string): Promise<void> {
-    await this.db.update(users).set({ deletedAt: new Date() }).where(eq(users.id, userId));
+    await this.db
+      .update(users)
+      .set({
+        deletedAt: new Date(),
+        sessionVersion: sql`${users.sessionVersion} + 1`,
+      })
+      .where(eq(users.id, userId));
   }
 
   private mapWriteError(err: unknown): Error {

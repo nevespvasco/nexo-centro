@@ -8,7 +8,7 @@ import { Password } from 'primereact/password'
 import { ApiError } from '../../lib/api'
 import { useAuth } from '../../lib/auth/AuthContext'
 import { defaultRoute } from '../../shell/nav.config'
-import './auth.scss'
+import { AuthLayout } from './AuthLayout'
 
 export function LoginPage() {
   const { login, loginTwoFactor } = useAuth()
@@ -62,13 +62,12 @@ export function LoginPage() {
   }
 
   return (
-    <div className="auth-page">
+    <AuthLayout>
       <Link to="/login" className="auth-page__wordmark">
         <i className="pi pi-heart-fill" aria-hidden="true" />
         MedFolio
       </Link>
-      <div className="auth-card">
-        {step === 'credentials' ? (
+      {step === 'credentials' ? (
           <>
             <h1 className="auth-card__title">Entrar</h1>
             <p className="auth-card__subtitle">Acede à tua conta MedFolio.</p>
@@ -126,7 +125,6 @@ export function LoginPage() {
             </form>
           </>
         )}
-      </div>
-    </div>
+    </AuthLayout>
   )
 }

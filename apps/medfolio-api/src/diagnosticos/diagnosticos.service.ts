@@ -1,6 +1,19 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { cirurgias, diagnosticos, zonaAnatomicas, type Database } from '@nexo-centro/db';
-import type { CreateDiagnostico, UpdateDiagnostico } from '@nexo-centro/schemas';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  cirurgias,
+  diagnosticos,
+  zonaAnatomicas,
+  type Database,
+} from '@nexo-centro/db';
+import type {
+  CreateDiagnostico,
+  UpdateDiagnostico,
+} from '@nexo-centro/schemas';
 import { and, asc, eq, isNull, or } from 'drizzle-orm';
 import { DRIZZLE } from '../database/drizzle.constants';
 import { pgConstraintName, pgErrorCode } from '../common/pg-error.util';
@@ -24,10 +37,16 @@ export class DiagnosticosService {
         deletedAt: diagnosticos.deletedAt,
       })
       .from(diagnosticos)
-      .leftJoin(zonaAnatomicas, eq(diagnosticos.zonaAnatomicaId, zonaAnatomicas.id))
+      .leftJoin(
+        zonaAnatomicas,
+        eq(diagnosticos.zonaAnatomicaId, zonaAnatomicas.id),
+      )
       .where(
         and(
-          or(eq(diagnosticos.hospitalId, hospitalId), isNull(diagnosticos.hospitalId)),
+          or(
+            eq(diagnosticos.hospitalId, hospitalId),
+            isNull(diagnosticos.hospitalId),
+          ),
           isNull(diagnosticos.deletedAt),
         ),
       )
@@ -41,7 +60,10 @@ export class DiagnosticosService {
       .where(
         and(
           eq(diagnosticos.id, id),
-          or(eq(diagnosticos.hospitalId, hospitalId), isNull(diagnosticos.hospitalId)),
+          or(
+            eq(diagnosticos.hospitalId, hospitalId),
+            isNull(diagnosticos.hospitalId),
+          ),
           isNull(diagnosticos.deletedAt),
         ),
       )
@@ -53,6 +75,7 @@ export class DiagnosticosService {
   }
 
   async create(hospitalId: string, payload: CreateDiagnostico) {
+    await this.assertZonaAllowed(hospitalId, payload.zonaAnatomicaId);
     try {
       const [created] = await this.db
         .insert(diagnosticos)
@@ -66,11 +89,16 @@ export class DiagnosticosService {
 
   async update(hospitalId: string, id: string, payload: UpdateDiagnostico) {
     await this.findOwned(hospitalId, id);
+    if (payload.zonaAnatomicaId !== undefined) {
+      await this.assertZonaAllowed(hospitalId, payload.zonaAnatomicaId);
+    }
     try {
       const [updated] = await this.db
         .update(diagnosticos)
         .set(payload)
-        .where(and(eq(diagnosticos.id, id), eq(diagnosticos.hospitalId, hospitalId)))
+        .where(
+          and(eq(diagnosticos.id, id), eq(diagnosticos.hospitalId, hospitalId)),
+        )
         .returning();
       return updated;
     } catch (err) {
@@ -85,7 +113,9 @@ export class DiagnosticosService {
       await this.db
         .update(diagnosticos)
         .set({ deletedAt: new Date() })
-        .where(and(eq(diagnosticos.id, id), eq(diagnosticos.hospitalId, hospitalId)));
+        .where(
+          and(eq(diagnosticos.id, id), eq(diagnosticos.hospitalId, hospitalId)),
+        );
     } catch (err) {
       throw this.mapWriteError(err);
     }
@@ -102,7 +132,9 @@ export class DiagnosticosService {
       .where(and(eq(cirurgias.diagnosticoId, id), isNull(cirurgias.deletedAt)))
       .limit(1);
     if (usedByCirurgia) {
-      throw new BadRequestException('Não é possível eliminar: está a ser usado.');
+      throw new BadRequestException(
+        'Não é possível eliminar: está a ser usado.',
+      );
     }
   }
 
@@ -111,23 +143,55 @@ export class DiagnosticosService {
     const [row] = await this.db
       .select({ id: diagnosticos.id })
       .from(diagnosticos)
-      .where(and(eq(diagnosticos.id, id), eq(diagnosticos.hospitalId, hospitalId), isNull(diagnosticos.deletedAt)))
+      .where(
+        and(
+          eq(diagnosticos.id, id),
+          eq(diagnosticos.hospitalId, hospitalId),
+          isNull(diagnosticos.deletedAt),
+        ),
+      )
       .limit(1);
     if (!row) {
       throw new NotFoundException('Diagnóstico não encontrado.');
     }
   }
 
+  private async assertZonaAllowed(
+    hospitalId: string,
+    zonaAnatomicaId: string,
+  ): Promise<void> {
+    const [row] = await this.db
+      .select({ id: zonaAnatomicas.id })
+      .from(zonaAnatomicas)
+      .where(
+        and(
+          eq(zonaAnatomicas.id, zonaAnatomicaId),
+          or(
+            eq(zonaAnatomicas.hospitalId, hospitalId),
+            isNull(zonaAnatomicas.hospitalId),
+          ),
+          isNull(zonaAnatomicas.deletedAt),
+        ),
+      )
+      .limit(1);
+    if (!row) throw new BadRequestException('Zona anatómica inválida.');
+  }
+
   private mapWriteError(err: unknown): Error {
     const constraint = pgConstraintName(err);
-    if (constraint === 'diagnosticos_hospital_id_nome_uq' || constraint === 'diagnosticos_nome_global_uq') {
+    if (
+      constraint === 'diagnosticos_hospital_id_nome_uq' ||
+      constraint === 'diagnosticos_nome_global_uq'
+    ) {
       return new BadRequestException('Já existe um diagnóstico com esse nome.');
     }
     if (constraint === 'diagnosticos_zona_anatomica_id_zona_anatomicas_id_fk') {
       return new BadRequestException('Zona anatómica inválida.');
     }
     if (pgErrorCode(err) === '23503') {
-      return new BadRequestException('Não é possível eliminar: está a ser usado.');
+      return new BadRequestException(
+        'Não é possível eliminar: está a ser usado.',
+      );
     }
     return err instanceof Error ? err : new Error(String(err));
   }

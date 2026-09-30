@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   createProcedimentoSchema,
   type CreateProcedimento,
@@ -22,14 +32,18 @@ export class ProcedimentosController {
   }
 
   @Get(':id')
-  findOne(@CurrentHospital() hospitalId: string, @Param('id', ParseUUIDPipe) id: string) {
+  findOne(
+    @CurrentHospital() hospitalId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.procedimentosService.findOne(hospitalId, id);
   }
 
   @Post()
   create(
     @CurrentHospital() hospitalId: string,
-    @Body(new ZodValidationPipe(createProcedimentoSchema)) body: CreateProcedimento,
+    @Body(new ZodValidationPipe(createProcedimentoSchema))
+    body: CreateProcedimento,
   ) {
     return this.procedimentosService.create(hospitalId, body);
   }
@@ -38,13 +52,17 @@ export class ProcedimentosController {
   update(
     @CurrentHospital() hospitalId: string,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(new ZodValidationPipe(updateProcedimentoSchema)) body: UpdateProcedimento,
+    @Body(new ZodValidationPipe(updateProcedimentoSchema))
+    body: UpdateProcedimento,
   ) {
     return this.procedimentosService.update(hospitalId, id, body);
   }
 
   @Delete(':id')
-  remove(@CurrentHospital() hospitalId: string, @Param('id', ParseUUIDPipe) id: string) {
+  remove(
+    @CurrentHospital() hospitalId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.procedimentosService.remove(hospitalId, id);
   }
 }

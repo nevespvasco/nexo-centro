@@ -16,6 +16,21 @@
   width: 100%;
 }
 
+.crud-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+
+  .p-inputtext,
+  .p-dropdown,
+  .p-calendar,
+  .p-multiselect {
+    min-width: 0;
+  }
+}
+
 .crud-table {
   background: var(--surface-card);
   border: 1px solid var(--border);
@@ -99,4 +114,135 @@
 }
 .crud-detail__back {
   margin-bottom: 16px;
+}
+
+.crud-field--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.crud-field--inline label {
+  margin: 0;
+}
+
+/* ── Painel ─────────────────────────────────────────────────────────────── */
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin: 16px 0 24px;
+}
+
+.dash-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+  padding: 16px 18px;
+}
+.dash-card__label {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.dash-card__value {
+  font-size: 1.75rem;
+  font-weight: var(--fw-bold, 700);
+  color: var(--text-strong);
+  line-height: 1;
+}
+
+.dash-section__title {
+  font-size: var(--fs-lg, 1.1rem);
+  font-weight: var(--fw-medium);
+  color: var(--text-strong);
+  margin: 8px 0 10px;
+}
+
+/* ── Relatório Cirurgias por Área ────────────────────────────────────────── */
+
+.report-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 12px;
+  flex-wrap: wrap;
+}
+.report-total {
+  font-size: var(--fs-base);
+  color: var(--text-muted);
+}
+
+.report-zona {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.report-zona__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface-hover, rgba(0, 0, 0, 0.03));
+  border-bottom: 1px solid var(--border);
+}
+.report-zona__name {
+  font-weight: var(--fw-medium);
+  color: var(--text-strong);
+}
+.report-zona__count {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.report-grupo__head {
+  padding: 8px 16px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.report-table th,
+.report-table td {
+  text-align: left;
+  padding: 7px 16px;
+  font-size: var(--fs-base);
+  border-top: 1px solid var(--border);
+}
+.report-table th {
+  color: var(--text-muted);
+  font-weight: var(--fw-medium);
+}
+.report-table td:last-child,
+.report-table th:last-child {
+  text-align: right;
+}
+
+/* ── Editor de cirurgias (registo) ───────────────────────────────────────── */
+
+.registo-cirurgia {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--surface-hover, rgba(0, 0, 0, 0.02));
+}
+.registo-cirurgia__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: var(--fw-medium);
+  color: var(--text-strong);
 }

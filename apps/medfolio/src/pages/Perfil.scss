@@ -1,16 +1,17 @@
 .profile-sections {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  max-width: 520px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  max-width: 1040px;
   margin-top: 24px;
 }
+.profile-sections > :first-child { grid-column: 1 / -1; }
 
 .profile-card {
   background: var(--surface-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow-card);
+  border-radius: 15px;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, .035);
   padding: clamp(20px, 4vw, 28px);
 }
 
@@ -131,4 +132,11 @@
   font-size: var(--fs-sm);
   color: var(--text-strong);
   text-align: center;
+}
+
+@media (max-width: 767px) {
+  .profile-sections { grid-template-columns: 1fr; gap: 14px; margin-top: 20px; }
+  .profile-sections > :first-child { grid-column: auto; }
+  .profile-form__actions { flex-direction: column-reverse; }
+  .profile-form__actions .p-button { width: 100%; justify-content: center; }
 }

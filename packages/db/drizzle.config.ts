@@ -1,12 +1,13 @@
-import { defineConfig } from 'drizzle-kit';
-import { config } from 'dotenv';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import { defineConfig } from "drizzle-kit";
+import { config } from "dotenv";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-config({ path: path.resolve(__dirname, '../../.env') });
+config({ path: path.resolve(__dirname, "../../.env") });
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl =
+  process.env.MIGRATION_DATABASE_URL ?? process.env.DATABASE_URL;
 if (!databaseUrl) {
   throw new Error(
     'DATABASE_URL is required for drizzle-kit. Set it in .env or pass it inline — see the "Base de dados (Drizzle)" section in README.md.',
@@ -14,8 +15,8 @@ if (!databaseUrl) {
 }
 
 export default defineConfig({
-  dialect: 'postgresql',
-  schema: './src/schema/index.ts',
-  out: './drizzle',
+  dialect: "postgresql",
+  schema: "./src/schema/index.ts",
+  out: "./drizzle",
   dbCredentials: { url: databaseUrl },
 });

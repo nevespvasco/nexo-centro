@@ -40,8 +40,8 @@ export function RequestHospitalDialog({ visible, onHide, onAdded }: RequestHospi
       await requestHospitalAccess(hospitalId)
       toast.current?.show({
         severity: 'success',
-        summary: 'Hospital adicionado',
-        detail: 'Já tens acesso a este hospital.',
+        summary: 'Pedido enviado',
+        detail: 'O acesso fica disponível depois de ser aprovado pelo hospital.',
       })
       onAdded?.()
       onHide()

@@ -1,6 +1,6 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-export const sexoSchema = z.enum(['masculino', 'feminino', 'outro']);
+export const sexoSchema = z.enum(["masculino", "feminino", "outro"]);
 
 /** Shape of a persisted utente, mirroring the `utentes` table in @nexo-centro/db. */
 export const utenteSchema = z.object({

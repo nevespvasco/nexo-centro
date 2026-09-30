@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const hospitalIdSchema = z.uuid();
 
@@ -22,3 +22,12 @@ export const requestHospitalAccessSchema = z.object({
 });
 
 export type RequestHospitalAccess = z.infer<typeof requestHospitalAccessSchema>;
+
+export const createHospitalSchema = z.object({
+  nome: z.string().trim().min(1).max(255),
+});
+
+export const updateHospitalSchema = createHospitalSchema.partial();
+
+export type CreateHospital = z.infer<typeof createHospitalSchema>;
+export type UpdateHospital = z.infer<typeof updateHospitalSchema>;

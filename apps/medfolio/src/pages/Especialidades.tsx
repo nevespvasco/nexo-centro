@@ -118,6 +118,8 @@ export function Especialidades() {
 
       <div className="crud-table">
         <DataTable
+          responsiveLayout="stack"
+          breakpoint="767px"
           value={rows}
           loading={loading}
           globalFilter={filter}

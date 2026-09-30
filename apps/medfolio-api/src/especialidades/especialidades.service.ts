@@ -1,6 +1,20 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { especialidades, procedimentos, registoCirurgicos, users, type Database } from '@nexo-centro/db';
-import type { CreateEspecialidade, UpdateEspecialidade } from '@nexo-centro/schemas';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  especialidades,
+  procedimentos,
+  registoCirurgicos,
+  users,
+  type Database,
+} from '@nexo-centro/db';
+import type {
+  CreateEspecialidade,
+  UpdateEspecialidade,
+} from '@nexo-centro/schemas';
 import { and, asc, eq, isNull, or } from 'drizzle-orm';
 import { DRIZZLE } from '../database/drizzle.constants';
 import { pgConstraintName, pgErrorCode } from '../common/pg-error.util';
@@ -15,7 +29,10 @@ export class EspecialidadesService {
       .from(especialidades)
       .where(
         and(
-          or(eq(especialidades.hospitalId, hospitalId), isNull(especialidades.hospitalId)),
+          or(
+            eq(especialidades.hospitalId, hospitalId),
+            isNull(especialidades.hospitalId),
+          ),
           isNull(especialidades.deletedAt),
         ),
       )
@@ -29,7 +46,10 @@ export class EspecialidadesService {
       .where(
         and(
           eq(especialidades.id, id),
-          or(eq(especialidades.hospitalId, hospitalId), isNull(especialidades.hospitalId)),
+          or(
+            eq(especialidades.hospitalId, hospitalId),
+            isNull(especialidades.hospitalId),
+          ),
           isNull(especialidades.deletedAt),
         ),
       )
@@ -58,7 +78,12 @@ export class EspecialidadesService {
       const [updated] = await this.db
         .update(especialidades)
         .set(payload)
-        .where(and(eq(especialidades.id, id), eq(especialidades.hospitalId, hospitalId)))
+        .where(
+          and(
+            eq(especialidades.id, id),
+            eq(especialidades.hospitalId, hospitalId),
+          ),
+        )
         .returning();
       return updated;
     } catch (err) {
@@ -73,7 +98,12 @@ export class EspecialidadesService {
       await this.db
         .update(especialidades)
         .set({ deletedAt: new Date() })
-        .where(and(eq(especialidades.id, id), eq(especialidades.hospitalId, hospitalId)));
+        .where(
+          and(
+            eq(especialidades.id, id),
+            eq(especialidades.hospitalId, hospitalId),
+          ),
+        );
     } catch (err) {
       throw this.mapWriteError(err);
     }
@@ -84,25 +114,38 @@ export class EspecialidadesService {
    * do schema nunca dispara, por isso a referência tem de ser verificada aqui.
    */
   private async assertNotReferenced(id: string): Promise<void> {
-    const [[usedByProcedimento], [usedByUser], [usedByRegisto]] = await Promise.all([
-      this.db
-        .select({ id: procedimentos.id })
-        .from(procedimentos)
-        .where(and(eq(procedimentos.especialidadeId, id), isNull(procedimentos.deletedAt)))
-        .limit(1),
-      this.db
-        .select({ id: users.id })
-        .from(users)
-        .where(and(eq(users.especialidadeId, id), isNull(users.deletedAt)))
-        .limit(1),
-      this.db
-        .select({ id: registoCirurgicos.id })
-        .from(registoCirurgicos)
-        .where(and(eq(registoCirurgicos.especialidadeId, id), isNull(registoCirurgicos.deletedAt)))
-        .limit(1),
-    ]);
+    const [[usedByProcedimento], [usedByUser], [usedByRegisto]] =
+      await Promise.all([
+        this.db
+          .select({ id: procedimentos.id })
+          .from(procedimentos)
+          .where(
+            and(
+              eq(procedimentos.especialidadeId, id),
+              isNull(procedimentos.deletedAt),
+            ),
+          )
+          .limit(1),
+        this.db
+          .select({ id: users.id })
+          .from(users)
+          .where(and(eq(users.especialidadeId, id), isNull(users.deletedAt)))
+          .limit(1),
+        this.db
+          .select({ id: registoCirurgicos.id })
+          .from(registoCirurgicos)
+          .where(
+            and(
+              eq(registoCirurgicos.especialidadeId, id),
+              isNull(registoCirurgicos.deletedAt),
+            ),
+          )
+          .limit(1),
+      ]);
     if (usedByProcedimento || usedByUser || usedByRegisto) {
-      throw new BadRequestException('Não é possível eliminar: está a ser usado.');
+      throw new BadRequestException(
+        'Não é possível eliminar: está a ser usado.',
+      );
     }
   }
 
@@ -112,7 +155,11 @@ export class EspecialidadesService {
       .select({ id: especialidades.id })
       .from(especialidades)
       .where(
-        and(eq(especialidades.id, id), eq(especialidades.hospitalId, hospitalId), isNull(especialidades.deletedAt)),
+        and(
+          eq(especialidades.id, id),
+          eq(especialidades.hospitalId, hospitalId),
+          isNull(especialidades.deletedAt),
+        ),
       )
       .limit(1);
     if (!row) {
@@ -122,11 +169,18 @@ export class EspecialidadesService {
 
   private mapWriteError(err: unknown): Error {
     const constraint = pgConstraintName(err);
-    if (constraint === 'especialidades_hospital_id_nome_uq' || constraint === 'especialidades_nome_global_uq') {
-      return new BadRequestException('Já existe uma especialidade com esse nome.');
+    if (
+      constraint === 'especialidades_hospital_id_nome_uq' ||
+      constraint === 'especialidades_nome_global_uq'
+    ) {
+      return new BadRequestException(
+        'Já existe uma especialidade com esse nome.',
+      );
     }
     if (pgErrorCode(err) === '23503') {
-      return new BadRequestException('Não é possível eliminar: está a ser usado.');
+      return new BadRequestException(
+        'Não é possível eliminar: está a ser usado.',
+      );
     }
     return err instanceof Error ? err : new Error(String(err));
   }

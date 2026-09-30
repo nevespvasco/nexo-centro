@@ -1,4 +1,19 @@
-import type { AvailableHospital, HospitalMembership, Sexo, TipoLesao } from '@nexo-centro/schemas';
+import type {
+  AvailableHospital,
+  CatalogosRegisto,
+  CirurgiasPorArea,
+  CreateAtividadeCientifica,
+  CreateFormacao,
+  CreateRegisto,
+  Dashboard,
+  HospitalMembership,
+  RegistoDetalhe,
+  RegistoResumo,
+  Sexo,
+  TipoAtividade,
+  TipoFormacao,
+  TipoLesao,
+} from '@nexo-centro/schemas';
 
 export interface HealthResponse {
   status: 'ok';
@@ -42,13 +57,19 @@ function getActiveHospitalId(): string | null {
 // allowedHeaders: ['Content-Type', 'X-Hospital-Id'] for the preflight to allow it.
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const activeHospitalId = getActiveHospitalId();
+  const csrfToken = document.cookie
+    .split('; ')
+    .find((entry) => entry.startsWith('medfolio_csrf='))
+    ?.slice('medfolio_csrf='.length);
   const res = await fetch(`/api${path}`, {
+    ...init,
     credentials: 'include',
     headers: {
-      ...(init?.body ? { 'Content-Type': 'application/json' } : undefined),
+      ...(init?.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : undefined),
       ...(activeHospitalId ? { 'X-Hospital-Id': activeHospitalId } : undefined),
+      ...(csrfToken ? { 'X-CSRF-Token': decodeURIComponent(csrfToken) } : undefined),
+      ...init?.headers,
     },
-    ...init,
   });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
@@ -165,7 +186,7 @@ export function getAvailableHospitals(): Promise<AvailableHospital[]> {
   return request('/hospitals/available');
 }
 
-export function requestHospitalAccess(hospitalId: string): Promise<void> {
+export function requestHospitalAccess(hospitalId: string): Promise<{ status: 'pending' }> {
   return postJson('/hospitals/requests', { hospitalId });
 }
 
@@ -197,6 +218,10 @@ export function getUtentes(): Promise<Utente[]> {
 
 export function getUtente(id: string): Promise<Utente> {
   return request(`/utentes/${id}`);
+}
+
+export function getUtenteByProcesso(processo: string): Promise<{ utente: Utente | null }> {
+  return request(`/utentes/processo/${encodeURIComponent(processo)}`);
 }
 
 export function createUtente(body: UtenteBody): Promise<Utente> {
@@ -289,6 +314,10 @@ export function deleteZonaAnatomica(id: string): Promise<void> {
   return deleteJson(`/zonas-anatomicas/${id}`);
 }
 
+export function reorderZonasAnatomicas(items: { id: string; ordem: number }[]): Promise<void> {
+  return patchJson('/zonas-anatomicas/reorder', items);
+}
+
 // ── Diagnósticos ─────────────────────────────────────────────────────────
 
 export interface Diagnostico {
@@ -368,4 +397,264 @@ export function updateProcedimento(id: string, body: Partial<ProcedimentoBody>):
 
 export function deleteProcedimento(id: string): Promise<void> {
   return deleteJson(`/procedimentos/${id}`);
+}
+
+// ── Atividade científica (portfólio pessoal) ──────────────────────────────
+
+export interface AtividadeCientifica {
+  id: string;
+  titulo: string;
+  tipo: TipoAtividade;
+  data: string;
+  autorPrincipal: boolean;
+  posicaoAutor: number | null;
+  fatorImpacto: string | null;
+  ficheiroPath: string | null;
+  ficheiroOriginalName: string | null;
+  ficheiroSize: number | null;
+  descricao: string | null;
+  revistaConferencia: string | null;
+  localizacao: string | null;
+  categoria: string | null;
+  autores: string | null;
+  doi: string | null;
+  isbn: string | null;
+  link: string | null;
+  observacoes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function getAtividadesCientificas(): Promise<AtividadeCientifica[]> {
+  return request('/atividades-cientificas');
+}
+
+export function createAtividadeCientifica(body: CreateAtividadeCientifica, file?: File | null): Promise<AtividadeCientifica> {
+  if (file) return request('/atividades-cientificas', { method: 'POST', body: portfolioFormData(body, 'ficheiro', file) });
+  return postJson('/atividades-cientificas', body);
+}
+
+export function updateAtividadeCientifica(
+  id: string,
+  body: CreateAtividadeCientifica & { removerFicheiro?: boolean },
+  file?: File | null,
+): Promise<AtividadeCientifica> {
+  if (file) return request(`/atividades-cientificas/${id}`, { method: 'PATCH', body: portfolioFormData(body, 'ficheiro', file) });
+  return patchJson(`/atividades-cientificas/${id}`, body);
+}
+
+export function downloadAtividade(id: string): Promise<void> {
+  return download(`/atividades-cientificas/${id}/download`, 'atividade');
+}
+
+export function exportAtividades(): Promise<void> {
+  return download('/atividades-cientificas/export', 'atividades.xlsx');
+}
+
+export function deleteAtividadeCientifica(id: string): Promise<void> {
+  return deleteJson(`/atividades-cientificas/${id}`);
+}
+
+// ── Formações (portfólio pessoal) ─────────────────────────────────────────
+
+export interface Formacao {
+  id: string;
+  titulo: string;
+  tipo: TipoFormacao;
+  dataInicio: string;
+  dataFim: string | null;
+  duracaoHoras: number | null;
+  creditos: string | null;
+  certificadoPath: string | null;
+  certificadoOriginalName: string | null;
+  certificadoSize: number | null;
+  descricao: string | null;
+  entidadeOrganizadora: string | null;
+  localizacao: string | null;
+  categoria: string | null;
+  tipoParticipacao: string | null;
+  temaApresentacao: string | null;
+  observacoes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function getFormacoes(): Promise<Formacao[]> {
+  return request('/formacoes');
+}
+
+export function createFormacao(body: CreateFormacao, file?: File | null): Promise<Formacao> {
+  if (file) return request('/formacoes', { method: 'POST', body: portfolioFormData(body, 'certificado', file) });
+  return postJson('/formacoes', body);
+}
+
+export function updateFormacao(id: string, body: CreateFormacao & { removerCertificado?: boolean }, file?: File | null): Promise<Formacao> {
+  if (file) return request(`/formacoes/${id}`, { method: 'PATCH', body: portfolioFormData(body, 'certificado', file) });
+  return patchJson(`/formacoes/${id}`, body);
+}
+
+export function downloadFormacao(id: string): Promise<void> {
+  return download(`/formacoes/${id}/download`, 'certificado');
+}
+
+export function exportFormacoes(): Promise<void> {
+  return download('/formacoes/export', 'formacoes.xlsx');
+}
+
+function portfolioFormData(body: unknown, field: string, file: File): FormData {
+  const data = new FormData();
+  data.append('payload', JSON.stringify(body));
+  data.append(field, file);
+  return data;
+}
+
+async function download(path: string, fallbackName: string): Promise<void> {
+  const response = await fetch(`/api${path}`, { credentials: 'include' });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(body?.message ?? response.statusText, response.status);
+  }
+  const disposition = response.headers.get('Content-Disposition');
+  const encodedName = disposition?.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  const plainName = disposition?.match(/filename="?([^";]+)"?/i)?.[1];
+  const name = encodedName ? decodeURIComponent(encodedName) : plainName ? decodeURIComponent(plainName) : fallbackName;
+  const url = URL.createObjectURL(await response.blob());
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+export function deleteFormacao(id: string): Promise<void> {
+  return deleteJson(`/formacoes/${id}`);
+}
+
+// ── Catálogos de referência (dropdowns do registo) ────────────────────────
+
+export function getCatalogosRegisto(): Promise<CatalogosRegisto> {
+  return request('/catalogos/registo');
+}
+
+// ── Registos cirúrgicos ───────────────────────────────────────────────────
+
+export interface RegistoFiltros {
+  search?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  diagnosticoId?: string;
+  procedimentoId?: string;
+  funcaoCirurgiaoId?: string;
+  tipoDeCirurgiaIds?: string[];
+}
+
+export function getRegistos(filtros?: RegistoFiltros): Promise<RegistoResumo[]> {
+  const params = new URLSearchParams();
+  if (filtros?.search) params.set('search', filtros.search);
+  if (filtros?.dataInicio) params.set('dataInicio', filtros.dataInicio);
+  if (filtros?.dataFim) params.set('dataFim', filtros.dataFim);
+  if (filtros?.diagnosticoId) params.set('diagnosticoId', filtros.diagnosticoId);
+  if (filtros?.procedimentoId) params.set('procedimentoId', filtros.procedimentoId);
+  if (filtros?.funcaoCirurgiaoId) params.set('funcaoCirurgiaoId', filtros.funcaoCirurgiaoId);
+  filtros?.tipoDeCirurgiaIds?.forEach((id) => params.append('tipoDeCirurgiaIds', id));
+  const qs = params.toString();
+  return request(`/registos-cirurgicos${qs ? `?${qs}` : ''}`);
+}
+
+export function getRegisto(id: string): Promise<RegistoDetalhe> {
+  return request(`/registos-cirurgicos/${id}`);
+}
+
+export function createRegisto(body: CreateRegisto): Promise<RegistoDetalhe> {
+  return postJson('/registos-cirurgicos', body);
+}
+
+export function updateRegisto(id: string, body: CreateRegisto): Promise<RegistoDetalhe> {
+  return patchJson(`/registos-cirurgicos/${id}`, body);
+}
+
+export function deleteRegisto(id: string): Promise<void> {
+  return deleteJson(`/registos-cirurgicos/${id}`);
+}
+
+export function exportRegistos(filtros?: RegistoFiltros): Promise<void> {
+  const params = new URLSearchParams();
+  if (filtros?.search) params.set('search', filtros.search);
+  if (filtros?.dataInicio) params.set('dataInicio', filtros.dataInicio);
+  if (filtros?.dataFim) params.set('dataFim', filtros.dataFim);
+  if (filtros?.diagnosticoId) params.set('diagnosticoId', filtros.diagnosticoId);
+  if (filtros?.procedimentoId) params.set('procedimentoId', filtros.procedimentoId);
+  if (filtros?.funcaoCirurgiaoId) params.set('funcaoCirurgiaoId', filtros.funcaoCirurgiaoId);
+  filtros?.tipoDeCirurgiaIds?.forEach((id) => params.append('tipoDeCirurgiaIds', id));
+  const qs = params.toString();
+  return download(`/registos-cirurgicos/export${qs ? `?${qs}` : ''}`, 'registos-cirurgicos.xlsx');
+}
+
+// ── Catálogos: Tipos de Cirurgia, Funções Cirurgião, Tipos de Abordagem ──────
+
+export interface CatalogoItem {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  hospitalId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface CatalogoItemBody {
+  nome: string;
+  descricao: string | null;
+}
+
+// Tipos de cirurgia
+export function listTiposDeCirurgia(): Promise<CatalogoItem[]> {
+  return request('/tipos-de-cirurgia');
+}
+export function createTipoDeCirurgia(body: CatalogoItemBody): Promise<CatalogoItem> {
+  return postJson('/tipos-de-cirurgia', body);
+}
+export function updateTipoDeCirurgia(id: string, body: Partial<CatalogoItemBody>): Promise<CatalogoItem> {
+  return patchJson(`/tipos-de-cirurgia/${id}`, body);
+}
+export function deleteTipoDeCirurgia(id: string): Promise<void> {
+  return deleteJson(`/tipos-de-cirurgia/${id}`);
+}
+
+// Funções cirurgião
+export function listFuncoesCirurgiao(): Promise<CatalogoItem[]> {
+  return request('/funcoes-cirurgiao');
+}
+export function createFuncaoCirurgiao(body: CatalogoItemBody): Promise<CatalogoItem> {
+  return postJson('/funcoes-cirurgiao', body);
+}
+export function updateFuncaoCirurgiao(id: string, body: Partial<CatalogoItemBody>): Promise<CatalogoItem> {
+  return patchJson(`/funcoes-cirurgiao/${id}`, body);
+}
+export function deleteFuncaoCirurgiao(id: string): Promise<void> {
+  return deleteJson(`/funcoes-cirurgiao/${id}`);
+}
+
+// Tipos de abordagem
+export function listTiposDeAbordagem(): Promise<CatalogoItem[]> {
+  return request('/tipos-de-abordagem');
+}
+export function createTipoDeAbordagem(body: CatalogoItemBody): Promise<CatalogoItem> {
+  return postJson('/tipos-de-abordagem', body);
+}
+export function updateTipoDeAbordagem(id: string, body: Partial<CatalogoItemBody>): Promise<CatalogoItem> {
+  return patchJson(`/tipos-de-abordagem/${id}`, body);
+}
+export function deleteTipoDeAbordagem(id: string): Promise<void> {
+  return deleteJson(`/tipos-de-abordagem/${id}`);
+}
+
+// ── Painel + relatório ────────────────────────────────────────────────────
+
+export function getDashboard(): Promise<Dashboard> {
+  return request('/dashboard');
+}
+
+export function getCirurgiasPorArea(): Promise<CirurgiasPorArea> {
+  return request('/cirurgias-por-area');
 }

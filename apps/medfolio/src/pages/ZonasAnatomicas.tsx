@@ -7,11 +7,13 @@ import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import { Toast } from 'primereact/toast'
 import { Button } from 'primereact/button'
 import { InputText } from 'primereact/inputtext'
+import { Tag } from 'primereact/tag'
 import {
   ApiError,
   createZonaAnatomica,
   deleteZonaAnatomica,
   getZonasAnatomicas,
+  reorderZonasAnatomicas,
   updateZonaAnatomica,
   type ZonaAnatomica,
   type ZonaAnatomicaBody,
@@ -30,11 +32,16 @@ export function ZonasAnatomicas() {
   const [form, setForm] = useState<ZonaAnatomicaBody>(emptyForm)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [orderDirty, setOrderDirty] = useState(false)
+  const [savingOrder, setSavingOrder] = useState(false)
 
   function load() {
     setLoading(true)
     getZonasAnatomicas()
-      .then(setRows)
+      .then((r) => {
+        setRows(r)
+        setOrderDirty(false)
+      })
       .catch(() =>
         toast.current?.show({ severity: 'error', summary: 'Erro', detail: 'Não foi possível carregar as zonas anatómicas.' }),
       )
@@ -102,6 +109,34 @@ export function ZonasAnatomicas() {
     })
   }
 
+  function moveRow(index: number, direction: -1 | 1) {
+    const target = index + direction
+    if (target < 0 || target >= rows.length) return
+    const next = [...rows]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    setRows(next)
+    setOrderDirty(true)
+  }
+
+  async function saveOrder() {
+    setSavingOrder(true)
+    try {
+      const ownedWithOrder = rows
+        .map((r, i) => ({ id: r.id, ordem: i, isOwned: r.hospitalId !== null }))
+        .filter((r) => r.isOwned)
+        .map(({ id, ordem }) => ({ id, ordem }))
+      await reorderZonasAnatomicas(ownedWithOrder)
+      setOrderDirty(false)
+      toast.current?.show({ severity: 'success', summary: 'Guardado', detail: 'Ordem guardada.' })
+    } catch {
+      toast.current?.show({ severity: 'error', summary: 'Erro', detail: 'Não foi possível guardar a ordem.' })
+    } finally {
+      setSavingOrder(false)
+    }
+  }
+
+  const isOwned = (row: ZonaAnatomica) => row.hospitalId !== null
+
   return (
     <div className="page">
       <Toast ref={toast} />
@@ -113,11 +148,16 @@ export function ZonasAnatomicas() {
         <span className="crud-toolbar__filter">
           <InputText value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filtrar zonas..." />
         </span>
+        {orderDirty && (
+          <Button label="Guardar ordem" icon="pi pi-sort" outlined loading={savingOrder} onClick={saveOrder} />
+        )}
         <Button label="Criar" icon="pi pi-plus" onClick={openCreate} />
       </div>
 
       <div className="crud-table">
         <DataTable
+          responsiveLayout="stack"
+          breakpoint="767px"
           value={rows}
           loading={loading}
           globalFilter={filter}
@@ -127,20 +167,65 @@ export function ZonasAnatomicas() {
           rows={10}
           rowsPerPageOptions={[10, 25, 50]}
         >
+          <Column
+            header=""
+            style={{ width: '60px' }}
+            body={(_row: ZonaAnatomica, opts) => {
+              const i = opts.rowIndex
+              if (!isOwned(_row)) return null
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <Button
+                    icon="pi pi-angle-up"
+                    text
+                    rounded
+                    size="small"
+                    aria-label="Mover para cima"
+                    disabled={i === 0}
+                    onClick={() => moveRow(i, -1)}
+                  />
+                  <Button
+                    icon="pi pi-angle-down"
+                    text
+                    rounded
+                    size="small"
+                    aria-label="Mover para baixo"
+                    disabled={i === rows.length - 1}
+                    onClick={() => moveRow(i, 1)}
+                  />
+                </div>
+              )
+            }}
+          />
           <Column field="nome" header="Nome" sortable />
           <Column field="descricao" header="Descrição" body={(row: ZonaAnatomica) => row.descricao ?? '—'} />
+          <Column
+            header=""
+            body={(row: ZonaAnatomica) =>
+              !isOwned(row) ? <Tag value="Global" severity="info" /> : null
+            }
+            style={{ width: '80px' }}
+          />
           <Column
             header=""
             style={{ width: '100px' }}
             body={(row: ZonaAnatomica) => (
               <div className="crud-actions">
-                <Button icon="pi pi-pencil" text rounded aria-label="Editar" onClick={() => openEdit(row)} />
+                <Button
+                  icon="pi pi-pencil"
+                  text
+                  rounded
+                  aria-label="Editar"
+                  disabled={!isOwned(row)}
+                  onClick={() => openEdit(row)}
+                />
                 <Button
                   icon="pi pi-trash"
                   text
                   rounded
                   severity="danger"
                   aria-label="Eliminar"
+                  disabled={!isOwned(row)}
                   onClick={() => confirmDelete(row)}
                 />
               </div>

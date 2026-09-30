@@ -36,7 +36,7 @@ export function TopBar({ theme, drawerOpen, onToggleTheme, onToggleDrawer }: Top
           aria-controls="navpanel"
           onClick={onToggleDrawer}
         >
-          <i className="pi pi-bars" aria-hidden="true" />
+          <i className={`pi ${drawerOpen ? 'pi-times' : 'pi-bars'}`} aria-hidden="true" />
         </button>
       </div>
     </header>

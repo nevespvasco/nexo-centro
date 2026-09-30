@@ -1,9 +1,26 @@
-import { Body, Controller, Delete, Get, HttpCode, Patch, Post, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Patch,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { changePasswordSchema, updateProfileSchema } from '@nexo-centro/schemas';
+import {
+  changePasswordSchema,
+  updateProfileSchema,
+} from '@nexo-centro/schemas';
 import type { CookieOptions, Response } from 'express';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import { SESSION_COOKIE } from '../auth/auth.constants';
+import {
+  CHALLENGE_COOKIE,
+  CSRF_COOKIE,
+  SESSION_COOKIE,
+} from '../auth/auth.constants';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 import type { EnvironmentVariables } from '../config/env.validation';
@@ -26,7 +43,11 @@ export class ProfileController {
   async update(
     @CurrentUser() userId: string,
     @Body(new ZodValidationPipe(updateProfileSchema))
-    body: { nome: string | null; email: string; especialidadeId: string | null },
+    body: {
+      nome: string | null;
+      email: string;
+      especialidadeId: string | null;
+    },
   ) {
     return this.profileService.update(userId, body);
   }
@@ -35,16 +56,26 @@ export class ProfileController {
   @HttpCode(200)
   async changePassword(
     @CurrentUser() userId: string,
-    @Body(new ZodValidationPipe(changePasswordSchema)) body: { currentPassword: string; newPassword: string },
+    @Body(new ZodValidationPipe(changePasswordSchema))
+    body: { currentPassword: string; newPassword: string },
+    @Res({ passthrough: true }) res: Response,
   ) {
-    await this.profileService.changePassword(userId, body.currentPassword, body.newPassword);
+    await this.profileService.changePassword(
+      userId,
+      body.currentPassword,
+      body.newPassword,
+    );
+    this.clearAuthCookies(res);
     return { status: 'ok' as const };
   }
 
   @Delete()
-  async deleteAccount(@CurrentUser() userId: string, @Res({ passthrough: true }) res: Response) {
+  async deleteAccount(
+    @CurrentUser() userId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     await this.profileService.deleteAccount(userId);
-    res.clearCookie(SESSION_COOKIE, this.cookieOptions());
+    this.clearAuthCookies(res);
     return { status: 'ok' as const };
   }
 
@@ -56,5 +87,15 @@ export class ProfileController {
       path: '/',
       maxAge: 0,
     };
+  }
+
+  private clearAuthCookies(res: Response): void {
+    res.clearCookie(SESSION_COOKIE, this.cookieOptions());
+    res.clearCookie(CHALLENGE_COOKIE, this.cookieOptions());
+    res.clearCookie(CSRF_COOKIE, {
+      ...this.cookieOptions(),
+      httpOnly: false,
+      sameSite: 'strict',
+    });
   }
 }

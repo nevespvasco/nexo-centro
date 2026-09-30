@@ -11,7 +11,7 @@ import {
   type TwoFactorSetupResponse,
 } from '../../lib/api'
 import { defaultRoute } from '../../shell/nav.config'
-import './auth.scss'
+import { AuthLayout } from './AuthLayout'
 
 function secretFrom(otpauthUrl: string): string {
   try {
@@ -58,13 +58,12 @@ export function TwoFactorSetupPage() {
   }
 
   return (
-    <div className="auth-page">
+    <AuthLayout>
       <Link to={defaultRoute} className="auth-page__wordmark">
         <i className="pi pi-heart-fill" aria-hidden="true" />
         MedFolio
       </Link>
-      <div className="auth-card">
-        {recoveryCodes ? (
+      {recoveryCodes ? (
           <>
             <h1 className="auth-card__title">Guarda os teus códigos de recuperação</h1>
             <p className="auth-card__subtitle">
@@ -119,7 +118,6 @@ export function TwoFactorSetupPage() {
             </form>
           </>
         )}
-      </div>
-    </div>
+    </AuthLayout>
   )
 }

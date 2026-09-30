@@ -1,6 +1,20 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { type Database, hospitalUser, hospitals } from '@nexo-centro/db';
-import type { AvailableHospital, HospitalMembership } from '@nexo-centro/schemas';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  auditEvents,
+  type Database,
+  hospitalUser,
+  hospitals,
+} from '@nexo-centro/db';
+import type {
+  AvailableHospital,
+  HospitalMembership,
+} from '@nexo-centro/schemas';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import { DRIZZLE } from '../database/drizzle.constants';
 import { pgConstraintName, pgErrorCode } from '../common/pg-error.util';
@@ -27,6 +41,7 @@ export class HospitalsService {
         and(
           eq(hospitalUser.userId, userId),
           eq(hospitalUser.status, 'approved'),
+          eq(hospitalUser.isActive, true),
           isNull(hospitalUser.deletedAt),
           isNull(hospitals.deletedAt),
         ),
@@ -46,11 +61,14 @@ export class HospitalsService {
     const [row] = await this.db
       .select({ id: hospitalUser.id })
       .from(hospitalUser)
+      .innerJoin(hospitals, eq(hospitalUser.hospitalId, hospitals.id))
       .where(
         and(
           eq(hospitalUser.userId, userId),
           eq(hospitalUser.status, 'approved'),
+          eq(hospitalUser.isActive, true),
           isNull(hospitalUser.deletedAt),
+          isNull(hospitals.deletedAt),
         ),
       )
       .limit(1);
@@ -58,8 +76,7 @@ export class HospitalsService {
   }
 
   async listRequestable(userId: string): Promise<AvailableHospital[]> {
-    // Exclui só os hospitais onde o utilizador já é `approved`; um `pending`
-    // ainda aparece, para o poder escolher e passar a `approved` (via requestAccess).
+    // Qualquer pedido ativo, pendente ou aprovado, impede pedidos duplicados.
     return this.db
       .select({ id: hospitals.id, nome: hospitals.nome })
       .from(hospitals)
@@ -68,7 +85,6 @@ export class HospitalsService {
         and(
           eq(hospitalUser.hospitalId, hospitals.id),
           eq(hospitalUser.userId, userId),
-          eq(hospitalUser.status, 'approved'),
           isNull(hospitalUser.deletedAt),
         ),
       )
@@ -76,13 +92,16 @@ export class HospitalsService {
       .orderBy(asc(hospitals.nome));
   }
 
-  async requestAccess(userId: string, hospitalId: string): Promise<{ status: 'ok' }> {
-    // Self-service: escolher um hospital dá acesso imediato (sem aprovação de
-    // admin). Fica `approved` para o HospitalScopeGuard e o switcher o aceitarem.
-    // Se já existir uma linha não-eliminada (ex.: `pending`), promove-a a
-    // `approved` em vez de inserir — evita chocar com o índice único e é idempotente.
+  async requestAccess(
+    userId: string,
+    hospitalId: string,
+  ): Promise<{ status: 'pending' }> {
     const [existing] = await this.db
-      .select({ id: hospitalUser.id, status: hospitalUser.status })
+      .select({
+        id: hospitalUser.id,
+        status: hospitalUser.status,
+        isActive: hospitalUser.isActive,
+      })
       .from(hospitalUser)
       .where(
         and(
@@ -94,26 +113,142 @@ export class HospitalsService {
       .limit(1);
 
     if (existing) {
-      if (existing.status !== 'approved') {
-        await this.db
-          .update(hospitalUser)
-          .set({ status: 'approved', approvedByUserId: userId, approvedAt: new Date() })
-          .where(eq(hospitalUser.id, existing.id));
+      if (existing.status === 'approved') {
+        if (!existing.isActive) {
+          throw new BadRequestException(
+            'O acesso a este hospital está suspenso. Contacta um administrador.',
+          );
+        }
+        throw new BadRequestException('Já tens acesso a este hospital.');
       }
-      return { status: 'ok' };
+      return { status: 'pending' };
     }
 
     try {
-      await this.db.insert(hospitalUser).values({
-        hospitalId,
-        userId,
-        status: 'approved',
-        approvedByUserId: userId,
-        approvedAt: new Date(),
+      await this.db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(hospitalUser)
+          .values({
+            hospitalId,
+            userId,
+            status: 'pending',
+          })
+          .returning({ id: hospitalUser.id });
+        await tx.insert(auditEvents).values({
+          actorUserId: userId,
+          hospitalId,
+          action: 'hospital.membership_requested',
+          entityType: 'hospital_user',
+          entityId: created.id,
+          after: { userId, status: 'pending' },
+        });
       });
-      return { status: 'ok' };
+      return { status: 'pending' };
     } catch (err) {
       throw this.mapRequestError(err);
+    }
+  }
+
+  async listPendingRequests(approverUserId: string, hospitalId: string) {
+    await this.assertCanApprove(approverUserId, hospitalId);
+    return this.db
+      .select({
+        id: hospitalUser.id,
+        userId: hospitalUser.userId,
+        requestedAt: hospitalUser.requestedAt,
+      })
+      .from(hospitalUser)
+      .where(
+        and(
+          eq(hospitalUser.hospitalId, hospitalId),
+          eq(hospitalUser.status, 'pending'),
+          isNull(hospitalUser.deletedAt),
+        ),
+      )
+      .orderBy(asc(hospitalUser.requestedAt));
+  }
+
+  async approveRequest(
+    approverUserId: string,
+    requestId: string,
+  ): Promise<{ status: 'approved' }> {
+    const [request] = await this.db
+      .select({
+        id: hospitalUser.id,
+        hospitalId: hospitalUser.hospitalId,
+        userId: hospitalUser.userId,
+      })
+      .from(hospitalUser)
+      .innerJoin(hospitals, eq(hospitalUser.hospitalId, hospitals.id))
+      .where(
+        and(
+          eq(hospitalUser.id, requestId),
+          eq(hospitalUser.status, 'pending'),
+          isNull(hospitalUser.deletedAt),
+          isNull(hospitals.deletedAt),
+        ),
+      )
+      .limit(1);
+    if (!request) throw new NotFoundException('Pedido não encontrado.');
+    if (request.userId === approverUserId) {
+      throw new ForbiddenException('Não podes aprovar o teu próprio pedido.');
+    }
+    await this.assertCanApprove(approverUserId, request.hospitalId);
+
+    const approved = await this.db.transaction(async (tx) => {
+      const [membership] = await tx
+        .update(hospitalUser)
+        .set({
+          status: 'approved',
+          isActive: true,
+          approvedByUserId: approverUserId,
+          approvedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(hospitalUser.id, requestId),
+            eq(hospitalUser.status, 'pending'),
+            isNull(hospitalUser.deletedAt),
+          ),
+        )
+        .returning({ id: hospitalUser.id });
+      if (!membership) return undefined;
+      await tx.insert(auditEvents).values({
+        actorUserId: approverUserId,
+        hospitalId: request.hospitalId,
+        action: 'hospital.membership_approved',
+        entityType: 'hospital_user',
+        entityId: membership.id,
+        after: { userId: request.userId, status: 'approved' },
+      });
+      return membership;
+    });
+    if (!approved) throw new BadRequestException('O pedido já foi processado.');
+    return { status: 'approved' };
+  }
+
+  private async assertCanApprove(
+    userId: string,
+    hospitalId: string,
+  ): Promise<void> {
+    const [membership] = await this.db
+      .select({ id: hospitalUser.id })
+      .from(hospitalUser)
+      .innerJoin(hospitals, eq(hospitalUser.hospitalId, hospitals.id))
+      .where(
+        and(
+          eq(hospitalUser.userId, userId),
+          eq(hospitalUser.hospitalId, hospitalId),
+          eq(hospitalUser.status, 'approved'),
+          eq(hospitalUser.isActive, true),
+          eq(hospitalUser.canApproveMembers, true),
+          isNull(hospitalUser.deletedAt),
+          isNull(hospitals.deletedAt),
+        ),
+      )
+      .limit(1);
+    if (!membership) {
+      throw new ForbiddenException('Sem permissão para aprovar membros.');
     }
   }
 

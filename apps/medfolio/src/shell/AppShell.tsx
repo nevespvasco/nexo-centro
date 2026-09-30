@@ -10,6 +10,7 @@ import { usePersistentState } from './usePersistentState'
 import { useTheme } from './useTheme'
 import { getHospitals } from '../lib/api'
 import './shell.scss'
+import './user-workspace.scss'
 
 export function AppShell() {
   const { theme, toggle: toggleTheme } = useTheme()
@@ -120,7 +121,13 @@ export function AppShell() {
         <main className="content">
           <Outlet />
         </main>
-        <div className="scrim" onClick={closeDrawer} aria-hidden="true" />
+        <button
+          type="button"
+          className="scrim"
+          onClick={closeDrawer}
+          aria-label="Fechar menu"
+          tabIndex={drawerOpen ? 0 : -1}
+        />
       </div>
       <Footer />
       <RequestHospitalDialog

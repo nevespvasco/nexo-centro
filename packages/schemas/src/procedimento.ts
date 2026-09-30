@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /** Shape of a persisted procedimento, mirroring the `procedimentos` table in @nexo-centro/db. */
 export const procedimentoSchema = z.object({

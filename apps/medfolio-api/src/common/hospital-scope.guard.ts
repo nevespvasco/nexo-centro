@@ -7,7 +7,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { type Database, hospitalUser } from '@nexo-centro/db';
+import { type Database, hospitalUser, hospitals } from '@nexo-centro/db';
 import { hospitalIdSchema } from '@nexo-centro/schemas';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { AuthenticatedRequest } from '../auth/jwt.guard';
@@ -40,19 +40,24 @@ export class HospitalScopeGuard implements CanActivate {
     const header = req.headers[HOSPITAL_HEADER];
     const result = hospitalIdSchema.safeParse(header);
     if (!result.success) {
-      throw new BadRequestException('Cabeçalho X-Hospital-Id em falta ou inválido.');
+      throw new BadRequestException(
+        'Cabeçalho X-Hospital-Id em falta ou inválido.',
+      );
     }
     const hospitalId = result.data;
 
     const [membership] = await this.db
       .select({ id: hospitalUser.id })
       .from(hospitalUser)
+      .innerJoin(hospitals, eq(hospitalUser.hospitalId, hospitals.id))
       .where(
         and(
           eq(hospitalUser.userId, req.user.id),
           eq(hospitalUser.hospitalId, hospitalId),
           eq(hospitalUser.status, 'approved'),
+          eq(hospitalUser.isActive, true),
           isNull(hospitalUser.deletedAt),
+          isNull(hospitals.deletedAt),
         ),
       )
       .limit(1);

@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: Lint · Typecheck · Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit dependency vulnerabilities
+        run: pnpm audit --audit-level high
+
+      - name: Build workspace packages
+        run: pnpm --filter "@nexo-centro/*" --parallel build
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Lint
+        run: pnpm -r lint
+
+      - name: Test
+        run: pnpm -r test --passWithNoTests
+
+  prod-smoke:
+    name: Prod boot smoke
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: smoke
+          POSTGRES_PASSWORD: smoke
+          POSTGRES_DB: smoke
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U smoke -d smoke"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate test secrets
+        run: |
+          echo "APP_ENCRYPTION_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+          echo "JWT_SECRET=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
+
+      - name: Build prod API image
+        run: docker build -f apps/medfolio-api/Dockerfile --target prod -t medfolio-api:smoke .
+
+      - name: Boot API and verify health endpoint
+        run: |
+          docker run -d --name api_smoke \
+            --network host \
+            -e NODE_ENV=production \
+            -e DATABASE_URL="postgres://smoke:smoke@127.0.0.1:5432/smoke" \
+            -e JWT_SECRET="$JWT_SECRET" \
+            -e APP_ENCRYPTION_KEY="$APP_ENCRYPTION_KEY" \
+            -e APP_ENCRYPTION_KEY_VERSION=1 \
+            -e FRONTEND_URL=https://app.example.test \
+            -e CORS_ORIGIN=https://app.example.test \
+            -e SMTP_HOST=127.0.0.1 \
+            -e SMTP_FROM=no-reply@example.test \
+            medfolio-api:smoke
+
+          for i in $(seq 1 20); do
+            sleep 2
+            if curl -sf http://localhost:3001/health > /dev/null 2>&1; then
+              echo "API started successfully"
+              curl -s http://localhost:3001/health
+              exit 0
+            fi
+          done
+
+          echo "::error::API did not start within 40 seconds"
+          docker logs api_smoke
+          exit 1
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f api_smoke 2>/dev/null || true

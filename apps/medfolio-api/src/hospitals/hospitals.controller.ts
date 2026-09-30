@@ -1,5 +1,17 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { requestHospitalAccessSchema, type RequestHospitalAccess } from '@nexo-centro/schemas';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  requestHospitalAccessSchema,
+  type RequestHospitalAccess,
+} from '@nexo-centro/schemas';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -22,9 +34,26 @@ export class HospitalsController {
 
   @Post('requests')
   requestAccess(
-    @Body(new ZodValidationPipe(requestHospitalAccessSchema)) body: RequestHospitalAccess,
+    @Body(new ZodValidationPipe(requestHospitalAccessSchema))
+    body: RequestHospitalAccess,
     @CurrentUser() userId: string,
   ) {
     return this.hospitalsService.requestAccess(userId, body.hospitalId);
+  }
+
+  @Get('requests/pending')
+  listPending(
+    @CurrentUser() userId: string,
+    @Query('hospitalId', ParseUUIDPipe) hospitalId: string,
+  ) {
+    return this.hospitalsService.listPendingRequests(userId, hospitalId);
+  }
+
+  @Post('requests/:id/approve')
+  approve(
+    @CurrentUser() userId: string,
+    @Param('id', ParseUUIDPipe) requestId: string,
+  ) {
+    return this.hospitalsService.approveRequest(userId, requestId);
   }
 }

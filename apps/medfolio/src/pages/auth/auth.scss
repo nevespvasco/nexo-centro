@@ -1,15 +1,74 @@
+/* ── Auth canvas ───────────────────────────────────────────────────────────
+   Split-screen auth screens: a white card floating on a mint canvas, form panel
+   on the left, healthcare photo + glass caption on the right. Emerald brand kept
+   throughout; all values here are scoped to auth so nothing leaks into the app. */
 .auth-page {
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
-  gap: 32px;
   padding: 24px;
-  background: var(--bg-canvas);
+  background: #e8f5ee;
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+/* Faint rotated-square decorations, echoing the reference shot. */
+.auth-page::before,
+.auth-page::after {
+  content: '';
+  position: absolute;
+  border-radius: 20px;
+  pointer-events: none;
+  background: rgba(5, 150, 105, 0.1);
+}
+.auth-page::before {
+  width: 170px;
+  height: 170px;
+  top: -44px;
+  left: 8%;
+  transform: rotate(20deg);
+}
+.auth-page::after {
+  width: 130px;
+  height: 130px;
+  bottom: 6%;
+  right: 9%;
+  transform: rotate(-15deg);
+  background: rgba(5, 150, 105, 0.08);
 }
 
+/* ── Split card ──────────────────────────────────────────────────────────── */
+.auth-shell {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 960px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(16, 24, 40, 0.12);
+  overflow: hidden;
+}
+
+.auth-shell__form {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  min-height: 580px;
+  padding: clamp(40px, 5vw, 60px) clamp(28px, 4vw, 52px);
+}
+
+/* ── Wordmark (pinned top-left of the form panel) ────────────────────────── */
 .auth-page__wordmark {
+  position: absolute;
+  top: clamp(28px, 4vw, 40px);
+  left: clamp(28px, 4vw, 52px);
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -22,16 +81,6 @@
 .auth-page__wordmark .pi {
   color: var(--primary);
   font-size: var(--fs-2xl);
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 400px;
-  background: var(--surface-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow-card);
-  padding: clamp(24px, 5vw, 36px);
 }
 
 .auth-card__title {
@@ -66,8 +115,30 @@
 }
 .auth-field .p-inputtext,
 .auth-field .p-password,
-.auth-field .p-password-input {
+.auth-field .p-password-input,
+.auth-field .p-dropdown {
   width: 100%;
+}
+.auth-field .p-password > .p-icon-field {
+  display: flex;
+  width: 100%;
+}
+/* Rounded fields, matching the reference. */
+.auth-field .p-inputtext,
+.auth-field .p-password-input {
+  border-radius: 10px;
+  padding: 11px 14px;
+}
+.auth-field .p-dropdown {
+  border-radius: 10px;
+}
+
+/* Full-width rounded buttons — colour stays emerald (PrimeReact primary). */
+.auth-form .p-button {
+  width: 100%;
+  justify-content: center;
+  border-radius: 10px;
+  padding: 11px 16px;
 }
 
 .auth-form__error {
@@ -97,6 +168,90 @@
   line-height: var(--lh-normal);
   color: var(--text-muted);
   text-align: center;
+}
+
+/* ── Image aside ─────────────────────────────────────────────────────────── */
+.auth-shell__aside {
+  position: relative;
+  overflow: hidden;
+  min-height: 580px;
+}
+.auth-shell__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* Emerald tint over the photo, tying it to the brand. */
+.auth-shell__aside::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(155deg, rgba(5, 150, 105, 0.32), rgba(4, 122, 86, 0.62));
+}
+.auth-shell__caption {
+  position: absolute;
+  z-index: 2;
+  left: clamp(20px, 5%, 32px);
+  right: clamp(20px, 5%, 32px);
+  bottom: clamp(20px, 5%, 32px);
+  padding: 20px 22px;
+  border-radius: 16px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.auth-shell__caption-title {
+  margin: 0 0 6px;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+}
+.auth-shell__caption-text {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-normal);
+  color: rgba(255, 255, 255, 0.86);
+}
+
+/* ── Responsive: collapse to a single form panel, hide the photo ─────────── */
+@media (max-width: 880px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+    max-width: 460px;
+  }
+  .auth-shell__aside {
+    display: none;
+  }
+  .auth-shell__form {
+    min-height: auto;
+    justify-content: flex-start;
+    padding: clamp(28px, 6vw, 40px);
+  }
+  .auth-page__wordmark {
+    position: static;
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-height: 680px) {
+  .auth-page { align-items: flex-start; }
+}
+
+/* ── Dark theme ──────────────────────────────────────────────────────────── */
+:root[data-theme='dark'] .auth-page {
+  background: #0d1512;
+}
+:root[data-theme='dark'] .auth-page::before {
+  background: rgba(52, 211, 153, 0.08);
+}
+:root[data-theme='dark'] .auth-page::after {
+  background: rgba(52, 211, 153, 0.06);
 }
 
 /* ── 2FA setup ─────────────────────────────────────────────────────────── */

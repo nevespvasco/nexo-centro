@@ -42,16 +42,25 @@ export function PerfilPage() {
           nome={user?.nome ?? null}
           email={user?.email ?? ''}
           especialidadeId={user?.especialidadeId ?? null}
-          onSaved={refresh}
+          onSaved={async () => {
+            await refresh()
+          }}
           onAccountDeleted={async () => {
             await logout()
             navigate('/login', { replace: true })
           }}
         />
-        <PasswordSection />
+        <PasswordSection
+          onChanged={async () => {
+            await logout()
+            navigate('/login', { replace: true })
+          }}
+        />
         <TwoFactorSection
           enabled={Boolean(user?.twoFactorConfirmedAt)}
-          onChanged={refresh}
+          onChanged={async () => {
+            await refresh()
+          }}
         />
       </div>
     </div>
@@ -177,7 +186,7 @@ function ProfileSection({
   )
 }
 
-function PasswordSection() {
+function PasswordSection({ onChanged }: { onChanged: () => Promise<void> }) {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -200,6 +209,7 @@ function PasswordSection() {
       setNewPassword('')
       setConfirmPassword('')
       setSuccess(true)
+      await onChanged()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível alterar a palavra-passe.')
     } finally {

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { Button } from 'primereact/button'
 import { InputText } from 'primereact/inputtext'
 import { postForgotPassword } from '../../lib/api'
-import './auth.scss'
+import { AuthLayout } from './AuthLayout'
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -23,13 +23,12 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="auth-page">
+    <AuthLayout>
       <Link to="/login" className="auth-page__wordmark">
         <i className="pi pi-heart-fill" aria-hidden="true" />
         MedFolio
       </Link>
-      <div className="auth-card">
-        <h1 className="auth-card__title">Esqueci-me da palavra-passe</h1>
+      <h1 className="auth-card__title">Esqueci-me da palavra-passe</h1>
         <p className="auth-card__subtitle">
           Indica o teu e-mail e enviamos-te um link para definires uma nova palavra-passe.
         </p>
@@ -57,7 +56,6 @@ export function ForgotPasswordPage() {
             </div>
           </form>
         )}
-      </div>
-    </div>
+    </AuthLayout>
   )
 }

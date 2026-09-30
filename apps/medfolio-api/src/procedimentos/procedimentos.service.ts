@@ -1,6 +1,19 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { cirurgias, especialidades, procedimentos, type Database } from '@nexo-centro/db';
-import type { CreateProcedimento, UpdateProcedimento } from '@nexo-centro/schemas';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  cirurgias,
+  especialidades,
+  procedimentos,
+  type Database,
+} from '@nexo-centro/db';
+import type {
+  CreateProcedimento,
+  UpdateProcedimento,
+} from '@nexo-centro/schemas';
 import { and, asc, eq, isNull, or } from 'drizzle-orm';
 import { DRIZZLE } from '../database/drizzle.constants';
 import { pgConstraintName, pgErrorCode } from '../common/pg-error.util';
@@ -23,10 +36,16 @@ export class ProcedimentosService {
         deletedAt: procedimentos.deletedAt,
       })
       .from(procedimentos)
-      .leftJoin(especialidades, eq(procedimentos.especialidadeId, especialidades.id))
+      .leftJoin(
+        especialidades,
+        eq(procedimentos.especialidadeId, especialidades.id),
+      )
       .where(
         and(
-          or(eq(procedimentos.hospitalId, hospitalId), isNull(procedimentos.hospitalId)),
+          or(
+            eq(procedimentos.hospitalId, hospitalId),
+            isNull(procedimentos.hospitalId),
+          ),
           isNull(procedimentos.deletedAt),
         ),
       )
@@ -40,7 +59,10 @@ export class ProcedimentosService {
       .where(
         and(
           eq(procedimentos.id, id),
-          or(eq(procedimentos.hospitalId, hospitalId), isNull(procedimentos.hospitalId)),
+          or(
+            eq(procedimentos.hospitalId, hospitalId),
+            isNull(procedimentos.hospitalId),
+          ),
           isNull(procedimentos.deletedAt),
         ),
       )
@@ -52,6 +74,7 @@ export class ProcedimentosService {
   }
 
   async create(hospitalId: string, payload: CreateProcedimento) {
+    await this.assertEspecialidadeAllowed(hospitalId, payload.especialidadeId);
     try {
       const [created] = await this.db
         .insert(procedimentos)
@@ -65,11 +88,22 @@ export class ProcedimentosService {
 
   async update(hospitalId: string, id: string, payload: UpdateProcedimento) {
     await this.findOwned(hospitalId, id);
+    if (payload.especialidadeId !== undefined) {
+      await this.assertEspecialidadeAllowed(
+        hospitalId,
+        payload.especialidadeId,
+      );
+    }
     try {
       const [updated] = await this.db
         .update(procedimentos)
         .set(payload)
-        .where(and(eq(procedimentos.id, id), eq(procedimentos.hospitalId, hospitalId)))
+        .where(
+          and(
+            eq(procedimentos.id, id),
+            eq(procedimentos.hospitalId, hospitalId),
+          ),
+        )
         .returning();
       return updated;
     } catch (err) {
@@ -84,7 +118,12 @@ export class ProcedimentosService {
       await this.db
         .update(procedimentos)
         .set({ deletedAt: new Date() })
-        .where(and(eq(procedimentos.id, id), eq(procedimentos.hospitalId, hospitalId)));
+        .where(
+          and(
+            eq(procedimentos.id, id),
+            eq(procedimentos.hospitalId, hospitalId),
+          ),
+        );
     } catch (err) {
       throw this.mapWriteError(err);
     }
@@ -101,7 +140,9 @@ export class ProcedimentosService {
       .where(and(eq(cirurgias.procedimentoId, id), isNull(cirurgias.deletedAt)))
       .limit(1);
     if (usedByCirurgia) {
-      throw new BadRequestException('Não é possível eliminar: está a ser usado.');
+      throw new BadRequestException(
+        'Não é possível eliminar: está a ser usado.',
+      );
     }
   }
 
@@ -110,23 +151,57 @@ export class ProcedimentosService {
     const [row] = await this.db
       .select({ id: procedimentos.id })
       .from(procedimentos)
-      .where(and(eq(procedimentos.id, id), eq(procedimentos.hospitalId, hospitalId), isNull(procedimentos.deletedAt)))
+      .where(
+        and(
+          eq(procedimentos.id, id),
+          eq(procedimentos.hospitalId, hospitalId),
+          isNull(procedimentos.deletedAt),
+        ),
+      )
       .limit(1);
     if (!row) {
       throw new NotFoundException('Procedimento não encontrado.');
     }
   }
 
+  private async assertEspecialidadeAllowed(
+    hospitalId: string,
+    especialidadeId: string,
+  ): Promise<void> {
+    const [row] = await this.db
+      .select({ id: especialidades.id })
+      .from(especialidades)
+      .where(
+        and(
+          eq(especialidades.id, especialidadeId),
+          or(
+            eq(especialidades.hospitalId, hospitalId),
+            isNull(especialidades.hospitalId),
+          ),
+          isNull(especialidades.deletedAt),
+        ),
+      )
+      .limit(1);
+    if (!row) throw new BadRequestException('Especialidade inválida.');
+  }
+
   private mapWriteError(err: unknown): Error {
     const constraint = pgConstraintName(err);
-    if (constraint === 'procedimentos_hospital_id_nome_uq' || constraint === 'procedimentos_nome_global_uq') {
-      return new BadRequestException('Já existe um procedimento com esse nome.');
+    if (
+      constraint === 'procedimentos_hospital_id_nome_uq' ||
+      constraint === 'procedimentos_nome_global_uq'
+    ) {
+      return new BadRequestException(
+        'Já existe um procedimento com esse nome.',
+      );
     }
     if (constraint === 'procedimentos_especialidade_id_especialidades_id_fk') {
       return new BadRequestException('Especialidade inválida.');
     }
     if (pgErrorCode(err) === '23503') {
-      return new BadRequestException('Não é possível eliminar: está a ser usado.');
+      return new BadRequestException(
+        'Não é possível eliminar: está a ser usado.',
+      );
     }
     return err instanceof Error ? err : new Error(String(err));
   }

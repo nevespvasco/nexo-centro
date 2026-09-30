@@ -1,5 +1,23 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
-import { createUtenteSchema, type CreateUtente, type UpdateUtente, updateUtenteSchema } from '@nexo-centro/schemas';
+import {
+  Body,
+  Controller,
+  Delete,
+  DefaultValuePipe,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  createUtenteSchema,
+  type CreateUtente,
+  type UpdateUtente,
+  updateUtenteSchema,
+} from '@nexo-centro/schemas';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { CurrentHospital } from '../common/current-hospital.decorator';
 import { HospitalScopeGuard } from '../common/hospital-scope.guard';
@@ -13,13 +31,36 @@ export class UtentesController {
   constructor(private readonly utentesService: UtentesService) {}
 
   @Get()
-  list(@CurrentHospital() hospitalId: string) {
-    return this.utentesService.list(hospitalId);
+  list(
+    @CurrentHospital() hospitalId: string,
+    @CurrentUser() userId: string,
+    @Query('limit', new DefaultValuePipe(100), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+  ) {
+    return this.utentesService.list(hospitalId, userId, limit, offset);
+  }
+
+  @Get('processo/:processo')
+  async findByProcesso(
+    @CurrentHospital() hospitalId: string,
+    @CurrentUser() userId: string,
+    @Param('processo') processo: string,
+  ) {
+    const utente = await this.utentesService.findByProcesso(
+      hospitalId,
+      userId,
+      processo,
+    );
+    return { utente };
   }
 
   @Get(':id')
-  findOne(@CurrentHospital() hospitalId: string, @Param('id', ParseUUIDPipe) id: string) {
-    return this.utentesService.findOne(hospitalId, id);
+  findOne(
+    @CurrentHospital() hospitalId: string,
+    @CurrentUser() userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.utentesService.findOne(hospitalId, userId, id);
   }
 
   @Post()
@@ -34,14 +75,19 @@ export class UtentesController {
   @Patch(':id')
   update(
     @CurrentHospital() hospitalId: string,
+    @CurrentUser() userId: string,
     @Param('id', ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(updateUtenteSchema)) body: UpdateUtente,
   ) {
-    return this.utentesService.update(hospitalId, id, body);
+    return this.utentesService.update(hospitalId, userId, id, body);
   }
 
   @Delete(':id')
-  remove(@CurrentHospital() hospitalId: string, @Param('id', ParseUUIDPipe) id: string) {
-    return this.utentesService.remove(hospitalId, id);
+  remove(
+    @CurrentHospital() hospitalId: string,
+    @CurrentUser() userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.utentesService.remove(hospitalId, userId, id);
   }
 }

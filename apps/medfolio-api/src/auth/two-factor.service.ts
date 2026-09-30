@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { type Database, users } from '@nexo-centro/db';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { generateSecret, generateURI, verify } from 'otplib';
 import * as QRCode from 'qrcode';
 import * as argon2 from 'argon2';
@@ -39,45 +39,70 @@ function generateRecoveryCode(): string {
 export class TwoFactorService {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
-  async setup(userId: string): Promise<{ otpauthUrl: string; qrDataUrl: string }> {
+  async setup(
+    userId: string,
+  ): Promise<{ otpauthUrl: string; qrDataUrl: string }> {
     const [user] = await this.db
-      .select({ email: users.email })
+      .select({
+        email: users.email,
+        twoFactorConfirmedAt: users.twoFactorConfirmedAt,
+      })
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
     if (!user) {
       throw new BadRequestException('Utilizador não encontrado.');
     }
+    if (user.twoFactorConfirmedAt) {
+      throw new BadRequestException(
+        'Desativa primeiro a verificação atual antes de configurar uma nova.',
+      );
+    }
 
     const secret = generateSecret();
-    await this.db.update(users).set({ twoFactorSecret: secret }).where(eq(users.id, userId));
+    await this.db
+      .update(users)
+      .set({ pendingTwoFactorSecret: secret })
+      .where(eq(users.id, userId));
 
-    const otpauthUrl = generateURI({ issuer: 'Medfolio', label: user.email, secret });
+    const otpauthUrl = generateURI({
+      issuer: 'Medfolio',
+      label: user.email,
+      secret,
+    });
     const qrDataUrl = await QRCode.toDataURL(otpauthUrl);
     return { otpauthUrl, qrDataUrl };
   }
 
   async confirm(userId: string, code: string): Promise<string[]> {
     const [user] = await this.db
-      .select({ twoFactorSecret: users.twoFactorSecret })
+      .select({ pendingTwoFactorSecret: users.pendingTwoFactorSecret })
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
-    if (!user?.twoFactorSecret) {
+    if (!user?.pendingTwoFactorSecret) {
       throw new BadRequestException('Configuração de 2FA não foi iniciada.');
     }
-    if (!(await verifyTotp(user.twoFactorSecret, code))) {
+    if (!(await verifyTotp(user.pendingTwoFactorSecret, code))) {
       throw new BadRequestException('Código inválido.');
     }
 
-    const plainCodes = Array.from({ length: RECOVERY_CODE_COUNT }, generateRecoveryCode);
+    const plainCodes = Array.from(
+      { length: RECOVERY_CODE_COUNT },
+      generateRecoveryCode,
+    );
     const records: RecoveryCodeRecord[] = await Promise.all(
-      plainCodes.map(async (plainCode) => ({ hash: await argon2.hash(plainCode), usedAt: null })),
+      plainCodes.map(async (plainCode) => ({
+        hash: await argon2.hash(plainCode),
+        usedAt: null,
+      })),
     );
 
     await this.db
       .update(users)
       .set({
+        twoFactorSecret: user.pendingTwoFactorSecret,
+        pendingTwoFactorSecret: null,
         twoFactorConfirmedAt: new Date(),
         twoFactorPromptedAt: new Date(),
         twoFactorRecoveryCodes: JSON.stringify(records),
@@ -88,10 +113,16 @@ export class TwoFactorService {
   }
 
   async skip(userId: string): Promise<void> {
-    await this.db
+    const [updated] = await this.db
       .update(users)
-      .set({ twoFactorPromptedAt: new Date(), twoFactorSecret: null })
-      .where(eq(users.id, userId));
+      .set({ twoFactorPromptedAt: new Date(), pendingTwoFactorSecret: null })
+      .where(and(eq(users.id, userId), isNull(users.twoFactorConfirmedAt)))
+      .returning({ id: users.id });
+    if (!updated) {
+      throw new BadRequestException(
+        'Uma verificação já confirmada não pode ser ignorada.',
+      );
+    }
   }
 
   async disable(userId: string, code: string): Promise<void> {
@@ -102,6 +133,7 @@ export class TwoFactorService {
       .update(users)
       .set({
         twoFactorSecret: null,
+        pendingTwoFactorSecret: null,
         twoFactorConfirmedAt: null,
         twoFactorPromptedAt: null,
         twoFactorRecoveryCodes: null,
@@ -126,17 +158,28 @@ export class TwoFactorService {
     }
 
     if (!user.twoFactorRecoveryCodes) return false;
-    const records: RecoveryCodeRecord[] = JSON.parse(user.twoFactorRecoveryCodes);
+    let records: RecoveryCodeRecord[];
+    try {
+      records = JSON.parse(user.twoFactorRecoveryCodes) as RecoveryCodeRecord[];
+    } catch {
+      return false;
+    }
     for (let i = 0; i < records.length; i++) {
       const record = records[i];
       if (record.usedAt) continue;
       if (await argon2.verify(record.hash, code)) {
         records[i] = { ...record, usedAt: new Date().toISOString() };
-        await this.db
+        const [consumed] = await this.db
           .update(users)
           .set({ twoFactorRecoveryCodes: JSON.stringify(records) })
-          .where(eq(users.id, userId));
-        return true;
+          .where(
+            and(
+              eq(users.id, userId),
+              eq(users.twoFactorRecoveryCodes, user.twoFactorRecoveryCodes),
+            ),
+          )
+          .returning({ id: users.id });
+        return consumed !== undefined;
       }
     }
     return false;

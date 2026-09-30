@@ -29,3 +29,17 @@ body {
 button {
   font-family: inherit;
 }
+
+@media (max-width: 767px) {
+  html,
+  body,
+  #root {
+    height: auto;
+    min-height: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    overflow-x: clip;
+  }
+}

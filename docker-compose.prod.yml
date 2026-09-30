@@ -6,8 +6,11 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      APP_DB_USER: ${APP_DB_USER:?APP_DB_USER is required}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD is required}
     volumes:
       - pgdata:/var/lib/postgresql
+      - ./docker/postgres/init-app-role.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -28,18 +31,40 @@ services:
       context: .
       dockerfile: apps/medfolio-api/Dockerfile
       target: prod
+    image: nexo-centro-api:local
     restart: unless-stopped
     environment:
+      NODE_ENV: production
+      PORT: 3001
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
       CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN is required}
+      FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required in production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      TWO_FACTOR_CHALLENGE_TTL: ${TWO_FACTOR_CHALLENGE_TTL:-5m}
+      APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:?APP_ENCRYPTION_KEY is required in production}
+      APP_ENCRYPTION_KEY_VERSION: ${APP_ENCRYPTION_KEY_VERSION:-1}
+      APP_ENCRYPTION_KEYS_RETIRED: ${APP_ENCRYPTION_KEYS_RETIRED:-}
+      SMTP_HOST: ${SMTP_HOST:?SMTP_HOST is required in production}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:?SMTP_FROM is required in production}
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
@@ -51,6 +76,20 @@ services:
       - internal
       - default
 
+  migrate:
+    image: nexo-centro-api:local
+    restart: "no"
+    command: ["node", "node_modules/@nexo-centro/db/dist/migrate.js"]
+    environment:
+      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL:?MIGRATION_DATABASE_URL is required}
+      APP_DB_USER: ${APP_DB_USER:?APP_DB_USER is required}
+    depends_on:
+      db:
+        condition: service_healthy
+    security_opt: ["no-new-privileges:true"]
+    networks:
+      - internal
+
   web:
     build:
       context: .
@@ -58,12 +97,13 @@ services:
       target: prod
     restart: unless-stopped
     ports:
-      - "80:80"
+      # Só acessível pelo reverse proxy TLS instalado no host.
+      - "127.0.0.1:8080:8080"
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/"]
       interval: 10s
       timeout: 5s
       retries: 5

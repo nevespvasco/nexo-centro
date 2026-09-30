@@ -12,6 +12,13 @@ export interface EnvironmentVariables {
   JWT_EXPIRES_IN: string;
   TWO_FACTOR_CHALLENGE_TTL: string;
   FRONTEND_URL: string;
+  SMTP_HOST?: string;
+  SMTP_PORT: number;
+  SMTP_SECURE: boolean;
+  SMTP_USER?: string;
+  SMTP_PASSWORD?: string;
+  SMTP_FROM?: string;
+  STORAGE_DIR?: string;
 }
 
 const NODE_ENVS = ['development', 'test', 'production'] as const;
@@ -38,7 +45,7 @@ export function validate(
   const nodeEnv = config.NODE_ENV ?? 'development';
   if (!NODE_ENVS.includes(nodeEnv as (typeof NODE_ENVS)[number])) {
     throw new Error(
-      `NODE_ENV must be one of ${NODE_ENVS.join(', ')} (got "${String(nodeEnv)}")`,
+      `NODE_ENV must be one of ${NODE_ENVS.join(', ')} (got "${displayValue(nodeEnv)}")`,
     );
   }
 
@@ -47,7 +54,7 @@ export function validate(
     port = Number(config.PORT);
     if (!Number.isInteger(port) || port <= 0 || port > 65535) {
       throw new Error(
-        `PORT must be a valid port number (got "${String(config.PORT)}")`,
+        `PORT must be a valid port number (got "${displayValue(config.PORT)}")`,
       );
     }
   }
@@ -86,7 +93,7 @@ export function validate(
       encryptionKeyVersion = Number(versionRaw);
       if (!Number.isInteger(encryptionKeyVersion) || encryptionKeyVersion < 1) {
         throw new Error(
-          `APP_ENCRYPTION_KEY_VERSION must be a positive integer (got "${String(versionRaw)}")`,
+          `APP_ENCRYPTION_KEY_VERSION must be a positive integer (got "${displayValue(versionRaw)}")`,
         );
       }
     }
@@ -102,6 +109,13 @@ export function validate(
   if (!jwtSecret && nodeEnv === 'production') {
     throw new Error('JWT_SECRET is required in production');
   }
+  if (
+    nodeEnv === 'production' &&
+    jwtSecret &&
+    Buffer.byteLength(jwtSecret, 'utf8') < 32
+  ) {
+    throw new Error('JWT_SECRET must contain at least 32 bytes in production');
+  }
 
   const jwtExpiresIn =
     typeof config.JWT_EXPIRES_IN === 'string' && config.JWT_EXPIRES_IN !== ''
@@ -114,18 +128,42 @@ export function validate(
       ? config.TWO_FACTOR_CHALLENGE_TTL
       : '5m';
 
-  const frontendUrl =
-    typeof config.FRONTEND_URL === 'string' && config.FRONTEND_URL !== ''
-      ? config.FRONTEND_URL
-      : 'http://localhost:5173';
+  if (nodeEnv === 'production' && !stringOrUndefined(config.FRONTEND_URL)) {
+    throw new Error('FRONTEND_URL is required in production');
+  }
+  const frontendUrl = normalizeHttpUrl(
+    stringOrUndefined(config.FRONTEND_URL) ?? 'http://localhost:5173',
+    'FRONTEND_URL',
+    nodeEnv === 'production',
+  );
+  const corsOrigin = normalizeCorsOrigins(
+    stringOrUndefined(config.CORS_ORIGIN),
+    nodeEnv === 'production',
+  );
+
+  const smtpHost = stringOrUndefined(config.SMTP_HOST);
+  const smtpUser = stringOrUndefined(config.SMTP_USER);
+  const smtpPassword = stringOrUndefined(config.SMTP_PASSWORD);
+  const smtpFrom = stringOrUndefined(config.SMTP_FROM);
+  const smtpPort =
+    config.SMTP_PORT === undefined ? 587 : Number(config.SMTP_PORT);
+  const smtpSecure = parseBoolean(config.SMTP_SECURE, 'SMTP_SECURE');
+  if (!Number.isInteger(smtpPort) || smtpPort <= 0 || smtpPort > 65535) {
+    throw new Error('SMTP_PORT must be a valid port number');
+  }
+  if (nodeEnv === 'production' && (!smtpHost || !smtpFrom)) {
+    throw new Error('SMTP_HOST and SMTP_FROM are required in production');
+  }
+  if ((smtpUser && !smtpPassword) || (!smtpUser && smtpPassword)) {
+    throw new Error('SMTP_USER and SMTP_PASSWORD must be configured together');
+  }
 
   return {
     ...config,
     DATABASE_URL: databaseUrl,
     NODE_ENV: nodeEnv as EnvironmentVariables['NODE_ENV'],
     PORT: port,
-    CORS_ORIGIN:
-      typeof config.CORS_ORIGIN === 'string' ? config.CORS_ORIGIN : undefined,
+    CORS_ORIGIN: corsOrigin,
     APP_ENCRYPTION_KEY:
       typeof encryptionKey === 'string' ? encryptionKey : undefined,
     APP_ENCRYPTION_KEY_VERSION: encryptionKeyVersion,
@@ -137,5 +175,82 @@ export function validate(
     JWT_EXPIRES_IN: jwtExpiresIn,
     TWO_FACTOR_CHALLENGE_TTL: twoFactorChallengeTtl,
     FRONTEND_URL: frontendUrl,
+    SMTP_HOST: smtpHost,
+    SMTP_PORT: smtpPort,
+    SMTP_SECURE: smtpSecure,
+    SMTP_USER: smtpUser,
+    SMTP_PASSWORD: smtpPassword,
+    SMTP_FROM: smtpFrom,
+    STORAGE_DIR:
+      typeof config.STORAGE_DIR === 'string' && config.STORAGE_DIR !== ''
+        ? config.STORAGE_DIR
+        : './storage',
   };
+}
+
+function stringOrUndefined(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() !== ''
+    ? value.trim()
+    : undefined;
+}
+
+function parseBoolean(value: unknown, name: string): boolean {
+  if (value === undefined || value === false || value === 'false') return false;
+  if (value === true || value === 'true') return true;
+  throw new Error(`${name} must be true or false`);
+}
+
+function displayValue(value: unknown): string {
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return String(value);
+  }
+  return typeof value;
+}
+
+function normalizeHttpUrl(
+  value: string,
+  name: string,
+  requireHttps: boolean,
+): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`${name} must be a valid URL`);
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error(`${name} must use http:// or https://`);
+  }
+  if (requireHttps && parsed.protocol !== 'https:') {
+    throw new Error(`${name} must use https:// in production`);
+  }
+  if (parsed.username || parsed.password) {
+    throw new Error(`${name} must not contain credentials`);
+  }
+  return value.replace(/\/+$/, '');
+}
+
+function normalizeCorsOrigins(
+  value: string | undefined,
+  requireHttps: boolean,
+): string | undefined {
+  if (!value) return undefined;
+  const origins = value
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+    .map((origin) => {
+      if (origin === '*') throw new Error('CORS_ORIGIN must not contain *');
+      const normalized = normalizeHttpUrl(origin, 'CORS_ORIGIN', requireHttps);
+      const parsed = new URL(normalized);
+      if (parsed.origin !== normalized) {
+        throw new Error('CORS_ORIGIN entries must contain only an origin');
+      }
+      return parsed.origin;
+    });
+  return origins.length > 0 ? [...new Set(origins)].join(',') : undefined;
 }

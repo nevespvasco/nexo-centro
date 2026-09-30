@@ -62,8 +62,15 @@ Definidas em `.env` (não commitado — ver `.env.example`):
 | `POSTGRES_USER` | sim | Utilizador do Postgres |
 | `POSTGRES_PASSWORD` | sim | Password do Postgres |
 | `POSTGRES_DB` | sim | Nome da base de dados |
-| `DATABASE_URL` | sim | Connection string usada pela API — tem de corresponder às três variáveis acima |
+| `APP_DB_USER` | sim | Conta limitada usada em runtime pela API |
+| `APP_DB_PASSWORD` | sim | Password exclusiva da conta limitada |
+| `DATABASE_URL` | sim | Connection string da conta limitada usada pela API (`APP_DB_USER`) |
+| `MIGRATION_DATABASE_URL` | sim | Connection string da conta proprietária, usada apenas nas migrações |
 | `CORS_ORIGIN` | sim | Origem permitida pela API (em dev, a URL do `web`) |
+| `FRONTEND_URL` | sim | URL pública usada nos links de recuperação de password |
+| `JWT_SECRET` | produção | Segredo aleatório usado para assinar sessões |
+| `APP_ENCRYPTION_KEY` | produção | Chave AES-256 em base64 para segredos 2FA |
+| `SMTP_HOST` / `SMTP_FROM` | produção | Servidor e remetente dos emails de recuperação |
 | `NODE_ENV` | não (default `development`) | Ambiente Node da API |
 | `CHOKIDAR_USEPOLLING` | não (default `false`) | Ativa polling de ficheiros — útil se o HMR não detectar alterações |
 
@@ -76,6 +83,48 @@ pnpm docker:prod
 ```
 
 Usa `docker-compose.prod.yml`, que constrói as imagens de produção dos dois apps (build multi-stage, API corre como utilizador não-root) e isola a base de dados numa rede interna sem rota para o exterior.
+
+O arranque executa primeiro todas as migrações com a conta proprietária. A seguir,
+reaplica as permissões mínimas da conta da API e impede essa conta de alterar ou
+apagar o histórico de auditoria. A API só arranca se esta etapa terminar com
+sucesso.
+
+O frontend fica ligado apenas a `127.0.0.1:8080`. Coloca um reverse proxy com
+TLS válido à frente dessa porta e publica apenas HTTPS.
+
+Se atualizares um volume Postgres criado antes de existir `APP_DB_USER`, prepara
+a conta limitada uma única vez e volta a arrancar a stack:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d db
+docker compose -f docker-compose.prod.yml exec db /docker-entrypoint-initdb.d/10-app-role.sh
+pnpm docker:prod
+```
+
+### Primeiro responsável de um hospital
+
+Pedidos de acesso ficam pendentes até serem aprovados por um membro autorizado.
+Depois de criar o primeiro utilizador e o hospital, atribui o primeiro responsável
+através da conta de migração:
+
+```bash
+APPROVER_EMAIL=responsavel@example.com \
+APPROVER_HOSPITAL_ID=<uuid-do-hospital> \
+pnpm db:grant-approver
+```
+
+Na stack de produção, o mesmo comando pode ser executado sem expor a conta de
+migração à API:
+
+```bash
+docker compose -f docker-compose.prod.yml run --rm \
+  -e APPROVER_EMAIL=responsavel@example.com \
+  -e APPROVER_HOSPITAL_ID=<uuid-do-hospital> \
+  migrate node node_modules/@nexo-centro/db/dist/grant-hospital-approver.js
+```
+
+A operação exige um utilizador ativo, é transacional e fica registada na tabela
+de auditoria.
 
 **Nunca reutilizar as credenciais de exemplo do `.env.example` em produção** — gera uma password forte própria para `POSTGRES_PASSWORD`.
 
@@ -90,10 +139,10 @@ pnpm db:push       # (dev only) sincroniza o schema diretamente, sem gerar SQL
 pnpm db:studio     # abre o Drizzle Studio
 ```
 
-`db:generate` não precisa de ligação à base de dados. `db:migrate`, `db:push` e `db:studio` precisam — e o `DATABASE_URL` do `.env` usa o hostname `db`, que só resolve **dentro** da rede Docker. A partir do host, corre-os com `localhost`:
+`db:generate` não precisa de ligação à base de dados. `db:migrate`, `db:push` e `db:studio` usam `MIGRATION_DATABASE_URL` (com fallback para `DATABASE_URL`) — o hostname `db` só resolve **dentro** da rede Docker. A partir do host, aponta a conta de migração para `localhost`:
 
 ```bash
-DATABASE_URL=postgresql://nexo:<password>@localhost:5432/nexo_centro pnpm db:migrate
+MIGRATION_DATABASE_URL=postgresql://nexo:<password>@localhost:5432/nexo_centro pnpm db:migrate
 ```
 
 Ou corre o comando dentro do container da API, onde o hostname `db` já resolve:

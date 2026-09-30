@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /** Shape of a persisted zona anatómica, mirroring the `zona_anatomicas` table in @nexo-centro/db. */
 export const zonaAnatomicaSchema = z.object({
@@ -21,6 +21,12 @@ export const createZonaAnatomicaSchema = z.object({
 /** Payload accepted when updating a zona anatómica. */
 export const updateZonaAnatomicaSchema = createZonaAnatomicaSchema.partial();
 
+/** Payload accepted when reordering zonas anatómicas. */
+export const reorderZonasAnatomicasSchema = z.array(
+  z.object({ id: z.uuid(), ordem: z.number().int().min(0) }),
+);
+
 export type ZonaAnatomica = z.infer<typeof zonaAnatomicaSchema>;
 export type CreateZonaAnatomica = z.infer<typeof createZonaAnatomicaSchema>;
 export type UpdateZonaAnatomica = z.infer<typeof updateZonaAnatomicaSchema>;
+export type ReorderZonasAnatomicas = z.infer<typeof reorderZonasAnatomicasSchema>;

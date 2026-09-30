@@ -62,7 +62,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(async () => {
-    await postLogout()
+    try {
+      await postLogout()
+    } catch {
+      // A password alterada ou a conta eliminada já pode ter revogado a sessão.
+    }
     setUser(null)
     setStatus('unauthenticated')
   }, [])

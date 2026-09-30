@@ -32,11 +32,13 @@ export const navSections: NavSectionDef[] = [
     title: 'Gestão de Dados',
     items: [
       { label: 'Utentes', icon: 'pi-users', path: '/utentes' },
-      { label: 'Hospitais de Origem', icon: 'pi-building', path: '/hospitais-origem' },
       { label: 'Especialidades', icon: 'pi-briefcase', path: '/especialidades' },
       { label: 'Zonas Anatómicas', icon: 'pi-sitemap', path: '/zonas-anatomicas' },
       { label: 'Diagnósticos', icon: 'pi-clipboard', path: '/diagnosticos' },
       { label: 'Procedimentos', icon: 'pi-list-check', path: '/procedimentos' },
+      { label: 'Tipos de Cirurgia', icon: 'pi-tag', path: '/tipos-de-cirurgia' },
+      { label: 'Funções de Cirurgião', icon: 'pi-id-card', path: '/funcoes-cirurgiao' },
+      { label: 'Tipos de Abordagem', icon: 'pi-directions', path: '/tipos-de-abordagem' },
     ],
   },
 ]

@@ -129,6 +129,8 @@ export function Utentes() {
 
       <div className="crud-table">
         <DataTable
+          responsiveLayout="stack"
+          breakpoint="767px"
           value={utentes}
           loading={loading}
           globalFilter={filter}

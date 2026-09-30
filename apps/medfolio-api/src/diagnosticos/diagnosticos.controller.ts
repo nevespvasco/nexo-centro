@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   createDiagnosticoSchema,
   type CreateDiagnostico,
@@ -22,14 +32,18 @@ export class DiagnosticosController {
   }
 
   @Get(':id')
-  findOne(@CurrentHospital() hospitalId: string, @Param('id', ParseUUIDPipe) id: string) {
+  findOne(
+    @CurrentHospital() hospitalId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.diagnosticosService.findOne(hospitalId, id);
   }
 
   @Post()
   create(
     @CurrentHospital() hospitalId: string,
-    @Body(new ZodValidationPipe(createDiagnosticoSchema)) body: CreateDiagnostico,
+    @Body(new ZodValidationPipe(createDiagnosticoSchema))
+    body: CreateDiagnostico,
   ) {
     return this.diagnosticosService.create(hospitalId, body);
   }
@@ -38,13 +52,17 @@ export class DiagnosticosController {
   update(
     @CurrentHospital() hospitalId: string,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(new ZodValidationPipe(updateDiagnosticoSchema)) body: UpdateDiagnostico,
+    @Body(new ZodValidationPipe(updateDiagnosticoSchema))
+    body: UpdateDiagnostico,
   ) {
     return this.diagnosticosService.update(hospitalId, id, body);
   }
 
   @Delete(':id')
-  remove(@CurrentHospital() hospitalId: string, @Param('id', ParseUUIDPipe) id: string) {
+  remove(
+    @CurrentHospital() hospitalId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.diagnosticosService.remove(hospitalId, id);
   }
 }

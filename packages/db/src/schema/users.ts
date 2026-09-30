@@ -1,38 +1,69 @@
-import { sql } from 'drizzle-orm';
-import { boolean, index, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
-import { timestamps } from './_helpers.js';
-import { encryptedText } from '../crypto.js';
-import { especialidades } from './reference.js';
+import { sql } from "drizzle-orm";
+import {
+  boolean,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core";
+import { timestamps } from "./_helpers.js";
+import { encryptedText } from "../crypto.js";
+import { especialidades } from "./reference.js";
 
 export const users = pgTable(
-  'users',
+  "users",
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    nome: varchar('nome', { length: 255 }),
-    email: varchar('email', { length: 255 }).notNull(),
-    password: varchar('password', { length: 255 }).notNull(),
-    isActive: boolean('is_active').notNull().default(true),
-    especialidadeId: uuid('especialidade_id').references(() => especialidades.id, {
-      onDelete: 'restrict',
+    id: uuid("id").primaryKey().defaultRandom(),
+    nome: varchar("nome", { length: 255 }),
+    email: varchar("email", { length: 255 }).notNull(),
+    password: varchar("password", { length: 255 }).notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    // Incrementado em eventos de revogação. Os JWT emitidos incluem esta versão.
+    sessionVersion: integer("session_version").notNull().default(1),
+    failedLoginAttempts: integer("failed_login_attempts").notNull().default(0),
+    loginLockedUntil: timestamp("login_locked_until", { withTimezone: true }),
+    failedTwoFactorAttempts: integer("failed_two_factor_attempts")
+      .notNull()
+      .default(0),
+    twoFactorLockedUntil: timestamp("two_factor_locked_until", {
+      withTimezone: true,
     }),
-    emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
+    especialidadeId: uuid("especialidade_id").references(
+      () => especialidades.id,
+      {
+        onDelete: "restrict",
+      },
+    ),
+    emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     // Encriptado at-rest (AES-256-GCM). Segredo em claro só em memória.
-    twoFactorSecret: encryptedText('two_factor_secret'),
+    twoFactorSecret: encryptedText("two_factor_secret"),
+    // Um novo setup não substitui o fator ativo até ser confirmado.
+    pendingTwoFactorSecret: encryptedText("pending_two_factor_secret"),
     // Guarda os códigos de recuperação COM HASH (argon2, one-time-use),
     // aplicado na camada de serviço quando forem gerados.
-    twoFactorRecoveryCodes: text('two_factor_recovery_codes'),
-    twoFactorConfirmedAt: timestamp('two_factor_confirmed_at', { withTimezone: true }),
+    twoFactorRecoveryCodes: text("two_factor_recovery_codes"),
+    twoFactorConfirmedAt: timestamp("two_factor_confirmed_at", {
+      withTimezone: true,
+    }),
     // Quando o setup de 2FA foi sugerido pela última vez (ecrã pós-login,
     // saltável). Distingue "primeiro login, ainda não sugerimos" de "já
     // sugerimos (ou saltou), não voltar a perguntar" quando twoFactorConfirmedAt
     // continua null.
-    twoFactorPromptedAt: timestamp('two_factor_prompted_at', { withTimezone: true }),
+    twoFactorPromptedAt: timestamp("two_factor_prompted_at", {
+      withTimezone: true,
+    }),
     ...timestamps,
   },
   (table) => [
-    uniqueIndex('users_email_uq').on(table.email).where(sql`deleted_at is null`),
-    index('users_especialidade_id_idx').on(table.especialidadeId),
-    index('users_is_active_idx').on(table.isActive),
+    uniqueIndex("users_email_uq")
+      .on(table.email)
+      .where(sql`deleted_at is null`),
+    index("users_especialidade_id_idx").on(table.especialidadeId),
+    index("users_is_active_idx").on(table.isActive),
   ],
 );
 

@@ -21,10 +21,13 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?define POSTGRES_USER no .env (copia de .env.example)}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD no .env (copia de .env.example)}
       POSTGRES_DB: ${POSTGRES_DB:?define POSTGRES_DB no .env (copia de .env.example)}
+      APP_DB_USER: ${APP_DB_USER:?define APP_DB_USER no .env (copia de .env.example)}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?define APP_DB_PASSWORD no .env (copia de .env.example)}
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql
+      - ./docker/postgres/init-app-role.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s

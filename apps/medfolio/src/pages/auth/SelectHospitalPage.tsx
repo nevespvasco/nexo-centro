@@ -6,16 +6,17 @@ import type { AvailableHospital } from '@nexo-centro/schemas'
 import { ApiError, getAvailableHospitals, requestHospitalAccess } from '../../lib/api'
 import { useAuth } from '../../lib/auth/AuthContext'
 import { defaultRoute } from '../../shell/nav.config'
-import './auth.scss'
+import { AuthLayout } from './AuthLayout'
 
 export function SelectHospitalPage() {
-  const { user, refresh, logout } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [hospitals, setHospitals] = useState<AvailableHospital[]>([])
   const [loading, setLoading] = useState(true)
   const [hospitalId, setHospitalId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [requested, setRequested] = useState(false)
 
   useEffect(() => {
     getAvailableHospitals()
@@ -43,9 +44,9 @@ export function SelectHospitalPage() {
     setSaving(true)
     try {
       await requestHospitalAccess(hospitalId)
-      const updated = await refresh()
-      const mustSetupTwoFactor = updated?.twoFactorConfirmedAt == null && updated?.twoFactorPromptedAt == null
-      navigate(mustSetupTwoFactor ? '/configurar-2fa' : defaultRoute, { replace: true })
+      setRequested(true)
+      setHospitals((current) => current.filter((hospital) => hospital.id !== hospitalId))
+      setHospitalId(null)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível enviar o pedido.')
     } finally {
@@ -64,13 +65,12 @@ export function SelectHospitalPage() {
   }
 
   return (
-    <div className="auth-page">
+    <AuthLayout>
       <span className="auth-page__wordmark">
         <i className="pi pi-heart-fill" aria-hidden="true" />
         MedFolio
       </span>
-      <div className="auth-card">
-        <h1 className="auth-card__title">Seleciona o teu hospital</h1>
+      <h1 className="auth-card__title">Seleciona o teu hospital</h1>
         <p className="auth-card__subtitle">
           Escolhe o teu hospital de origem para entrares na aplicação. Podes adicionar outros
           hospitais mais tarde.
@@ -93,6 +93,11 @@ export function SelectHospitalPage() {
             />
           </div>
           {error && <div className="auth-form__error">{error}</div>}
+          {requested && (
+            <div className="auth-form__success">
+              Pedido enviado. Poderás entrar depois de um responsável do hospital o aprovar.
+            </div>
+          )}
           <Button
             type="button"
             label="Continuar"
@@ -108,7 +113,6 @@ export function SelectHospitalPage() {
             onClick={handleLogout}
           />
         </div>
-      </div>
-    </div>
+    </AuthLayout>
   )
 }
