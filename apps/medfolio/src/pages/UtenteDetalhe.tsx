@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from 'primereact/button'
 import { Tag } from 'primereact/tag'
-import { ApiError, getUtente, type Utente } from '../lib/api'
+import { ApiError, getHospitals, getUtente, type Utente } from '../lib/api'
 import { calculateAge, formatDatePT } from '../lib/date'
 import '../styles/crud.scss'
 
@@ -14,20 +14,29 @@ const SEXO_LABELS: Record<string, string> = {
 
 export function UtenteDetalhe() {
   const { id } = useParams<{ id: string }>()
+  const [params] = useSearchParams()
+  const hospitalId = params.get('hospitalId')
+  const returnParams = params.get('return')
   const navigate = useNavigate()
   const [utente, setUtente] = useState<Utente | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [hospitalNome, setHospitalNome] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!id) return
+    if (!hospitalId) return
+    getHospitals().then((hospitals) => setHospitalNome(hospitals.find((h) => h.id === hospitalId)?.nome ?? null)).catch(() => setHospitalNome(null))
+  }, [hospitalId])
+
+  useEffect(() => {
+    if (!id || !hospitalId) { setError('Hospital do utente em falta.'); setLoading(false); return }
     setLoading(true)
     setError(null)
-    getUtente(id)
+    getUtente(id, hospitalId)
       .then(setUtente)
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Não foi possível carregar o utente.'))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, hospitalId])
 
   return (
     <div className="page">
@@ -36,10 +45,11 @@ export function UtenteDetalhe() {
         icon="pi pi-arrow-left"
         label="Voltar"
         text
-        onClick={() => navigate('/utentes')}
+        onClick={() => navigate(`/utentes${returnParams ? `?${returnParams}` : ''}`)}
       />
       <h1 className="page__title">Detalhe do utente</h1>
       <p className="page__subtitle">Dados completos do registo, incluindo idade calculada a partir da data de nascimento.</p>
+      {hospitalId && <p className="page__subtitle">Hospital: {hospitalNome ?? hospitalId}</p>}
 
       {loading && <p>A carregar…</p>}
       {error && <Tag severity="danger" value={error} />}

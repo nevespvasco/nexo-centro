@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { TopBar } from './TopBar'
 import { Footer } from './Footer'
-import { MiniRail } from './MiniRail'
 import { NavPanel } from './NavPanel'
 import { RequestHospitalDialog } from './RequestHospitalDialog'
 import type { HospitalDef } from './nav.config'
@@ -13,6 +12,8 @@ import './shell.scss'
 import './user-workspace.scss'
 
 export function AppShell() {
+  const location = useLocation()
+  const readPage = ['/', '/registos-cirurgicos', '/cirurgias-por-area', '/utentes'].includes(location.pathname) || location.pathname.startsWith('/utentes/')
   const { theme, toggle: toggleTheme } = useTheme()
   const [userCollapsed, setUserCollapsed] = usePersistentState('medfolio.nav.collapsed', false)
   const [activeHospital, setActiveHospital] = usePersistentState<string | null>(
@@ -34,6 +35,8 @@ export function AppShell() {
 
   useEffect(() => {
     loadHospitals()
+    window.addEventListener('focus', loadHospitals)
+    return () => window.removeEventListener('focus', loadHospitals)
   }, [loadHospitals])
 
   // Reconcile the persisted active hospital against the loaded list: covers
@@ -95,31 +98,22 @@ export function AppShell() {
       <TopBar
         theme={theme}
         drawerOpen={drawerOpen}
+        hospitals={hospitals}
+        activeHospital={activeHospital}
+        onSelectHospital={setActiveHospital}
         onToggleTheme={toggleTheme}
         onToggleDrawer={() => setDrawerOpen((v) => !v)}
+        onRequestAccess={() => setRequestOpen(true)}
       />
       <div className="body">
-        <MiniRail
-          hospitals={hospitals}
-          activeHospital={activeHospital}
-          onSelectHospital={setActiveHospital}
-          onRequestAccess={() => setRequestOpen(true)}
-          inert={isMobile && !drawerOpen}
-        />
         <NavPanel
           collapsed={collapsed}
           onToggleCollapsed={toggleCollapsed}
           onNavigate={closeDrawer}
           inert={isMobile && !drawerOpen}
-          {...(isMobile && {
-            hospitals,
-            activeHospital,
-            onSelectHospital: setActiveHospital,
-            onRequestAccess: () => setRequestOpen(true),
-          })}
         />
         <main className="content">
-          <Outlet />
+          <Outlet key={readPage ? undefined : activeHospital ?? undefined} />
         </main>
         <button
           type="button"

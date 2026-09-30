@@ -17,21 +17,3 @@
 .export-summary { display: grid; grid-template-columns: 125px 1fr; gap: 10px; }
 .export-summary dt { font-weight: 700; }
 .export-summary dd { margin: 0; overflow-wrap: anywhere; }
-/* Align the management-scope row to the same content column as .page
-   (width min(1480px), centered, matching horizontal padding) so its input
-   and "Pedir acesso" button line up with the page title/toolbar below it. */
-.shell .content .management-scope {
-  width: min(1480px, 100%);
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: clamp(24px, 3vw, 42px) clamp(18px, 3vw, 44px);
-  padding-bottom: 0;
-}
-.management-scope label { font-weight: 700; }
-.management-scope .p-dropdown { min-width: min(100%, 250px); }
-/* Avoid doubling the top gap: the page already pads its top, so when it
-   follows the management row, tighten it to a single rhythm step. */
-.shell .content .management-scope + .page { padding-top: clamp(14px, 1.6vw, 22px); }

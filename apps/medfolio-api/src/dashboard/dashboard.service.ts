@@ -4,6 +4,7 @@ import {
   cirurgias,
   formacoes,
   registoCirurgicos,
+  hospitals,
   tipoDeCirurgias,
   utentes,
   type Database,
@@ -24,15 +25,15 @@ import {
 } from 'drizzle-orm';
 import { DRIZZLE } from '../database/drizzle.constants';
 
-/** Métricas do painel clínico do utilizador autenticado no hospital ativo. */
+/** Métricas do painel clínico do utilizador autenticado nos hospitais aprovados. */
 @Injectable()
 export class DashboardService {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
-  async summary(hospitalId: string, userId: string): Promise<Dashboard> {
+  async summary(hospitalIds: string[], userId: string): Promise<Dashboard> {
     const firstOfMonth = this.firstOfCurrentMonth();
     const registoScope = and(
-      eq(registoCirurgicos.hospitalId, hospitalId),
+      inArray(registoCirurgicos.hospitalId, hospitalIds),
       eq(registoCirurgicos.userId, userId),
       isNull(registoCirurgicos.deletedAt),
     );
@@ -91,7 +92,7 @@ export class DashboardService {
         })
         .from(formacoes)
         .where(eq(formacoes.userId, userId)),
-      this.recentes(hospitalId, userId),
+      this.recentes(hospitalIds, userId),
     ]);
 
     return {
@@ -108,18 +109,21 @@ export class DashboardService {
   }
 
   private async recentes(
-    hospitalId: string,
+    hospitalIds: string[],
     userId: string,
   ): Promise<DashboardRegistoRecente[]> {
     const rows = await this.db
       .select({
         id: registoCirurgicos.id,
+        hospitalId: registoCirurgicos.hospitalId,
+        hospitalNome: hospitals.nome,
         dataCirurgia: registoCirurgicos.dataCirurgia,
         utenteNome: utentes.nome,
         utenteProcesso: utentes.processo,
         tipoDeCirurgiaNome: tipoDeCirurgias.nome,
       })
       .from(registoCirurgicos)
+      .innerJoin(hospitals, eq(registoCirurgicos.hospitalId, hospitals.id))
       .leftJoin(utentes, eq(registoCirurgicos.utenteId, utentes.id))
       .leftJoin(
         tipoDeCirurgias,
@@ -127,7 +131,7 @@ export class DashboardService {
       )
       .where(
         and(
-          eq(registoCirurgicos.hospitalId, hospitalId),
+          inArray(registoCirurgicos.hospitalId, hospitalIds),
           eq(registoCirurgicos.userId, userId),
           isNull(registoCirurgicos.deletedAt),
         ),

@@ -70,10 +70,10 @@ export function SelectHospitalPage() {
         <i className="pi pi-heart-fill" aria-hidden="true" />
         MedFolio
       </span>
-      <h1 className="auth-card__title">Seleciona o teu hospital</h1>
+      <h1 className="auth-card__title">Pedir acesso a um hospital</h1>
         <p className="auth-card__subtitle">
-          Escolhe o teu hospital de origem para entrares na aplicação. Podes adicionar outros
-          hospitais mais tarde.
+          Escolhe um hospital para pedir acesso. Depois da aprovação, podes pedir acesso a outros
+          hospitais e consultar os teus dados em conjunto.
         </p>
         <div className="auth-form">
           <div className="auth-field">

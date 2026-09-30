@@ -26,12 +26,13 @@ const TIPO_LESAO_OPTIONS: { label: string; value: TipoLesao }[] = [
 // ── QuickAdd Diagnóstico ──────────────────────────────────────────────────
 
 interface QuickAddDiagnosticoProps {
+  hospitalId: string
   visible: boolean
   onHide: () => void
   onCreated: (d: Diagnostico) => void
 }
 
-export function QuickAddDiagnostico({ visible, onHide, onCreated }: QuickAddDiagnosticoProps) {
+export function QuickAddDiagnostico({ hospitalId, visible, onHide, onCreated }: QuickAddDiagnosticoProps) {
   const toast = useRef<Toast>(null)
   const [nome, setNome] = useState('')
   const [tipo, setTipo] = useState<TipoLesao>('benigno')
@@ -45,7 +46,7 @@ export function QuickAddDiagnostico({ visible, onHide, onCreated }: QuickAddDiag
     setTipo('benigno')
     setZonaId('')
     setError(null)
-    getZonasAnatomicas().then(setZonas).catch(() => null)
+    getZonasAnatomicas(hospitalId).then(setZonas).catch(() => null)
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -54,7 +55,7 @@ export function QuickAddDiagnostico({ visible, onHide, onCreated }: QuickAddDiag
     setError(null)
     setSaving(true)
     try {
-      const d = await createDiagnostico({ nome, tipo, zonaAnatomicaId: zonaId })
+      const d = await createDiagnostico({ nome, tipo, zonaAnatomicaId: zonaId }, hospitalId)
       onCreated(d)
       onHide()
     } catch (err) {
@@ -115,12 +116,13 @@ export function QuickAddDiagnostico({ visible, onHide, onCreated }: QuickAddDiag
 // ── QuickAdd Procedimento ─────────────────────────────────────────────────
 
 interface QuickAddProcedimentoProps {
+  hospitalId: string
   visible: boolean
   onHide: () => void
   onCreated: (p: Procedimento) => void
 }
 
-export function QuickAddProcedimento({ visible, onHide, onCreated }: QuickAddProcedimentoProps) {
+export function QuickAddProcedimento({ hospitalId, visible, onHide, onCreated }: QuickAddProcedimentoProps) {
   const [nome, setNome] = useState('')
   const [especialidadeId, setEspecialidadeId] = useState<string>('')
   const [especialidades, setEspecialidades] = useState<EspecialidadeRow[]>([])
@@ -131,7 +133,7 @@ export function QuickAddProcedimento({ visible, onHide, onCreated }: QuickAddPro
     setNome('')
     setEspecialidadeId('')
     setError(null)
-    listEspecialidades().then(setEspecialidades).catch(() => null)
+    listEspecialidades(hospitalId).then(setEspecialidades).catch(() => null)
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -140,7 +142,7 @@ export function QuickAddProcedimento({ visible, onHide, onCreated }: QuickAddPro
     setError(null)
     setSaving(true)
     try {
-      const p = await createProcedimento({ nome, especialidadeId })
+      const p = await createProcedimento({ nome, especialidadeId }, hospitalId)
       onCreated(p)
       onHide()
     } catch (err) {

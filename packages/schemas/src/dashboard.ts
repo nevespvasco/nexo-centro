@@ -3,6 +3,8 @@ import { z } from "zod";
 /** Linha de registo recente mostrada no painel. */
 export const dashboardRegistoRecenteSchema = z.object({
   id: z.uuid(),
+  hospitalId: z.uuid(),
+  hospitalNome: z.string(),
   dataCirurgia: z.iso.date(),
   utenteNome: z.string().nullable(),
   utenteProcesso: z.string(),

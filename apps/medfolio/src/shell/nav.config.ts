@@ -18,7 +18,7 @@ export interface NavSectionDef {
 export const navSections: NavSectionDef[] = [
   {
     id: 'plataforma',
-    title: 'Plataforma',
+    title: 'Dados clínicos',
     items: [
       { label: 'Painel', icon: 'pi-home', path: '/' },
       { label: 'Registos Cirúrgicos', icon: 'pi-file-edit', path: '/registos-cirurgicos' },

@@ -14,6 +14,7 @@ import type {
   TipoFormacao,
   TipoLesao,
 } from '@nexo-centro/schemas';
+import { type HospitalScope, scopeParams } from './hospitalScopeModel'
 
 export interface HealthResponse {
   status: 'ok';
@@ -51,12 +52,14 @@ function getActiveHospitalId(): string | null {
   }
 }
 
-// Sent on every request; only routes behind HospitalScopeGuard read it, so
-// it's harmless on the rest (e.g. /auth/me, /hospitals). If the API ever
+// Single-hospital routes still use this legacy header. Multi-hospital reads
+// carry an explicit URL scope and must not inherit the management selection.
+// If the API ever
 // stops being same-origin, main.ts's enableCors needs
 // allowedHeaders: ['Content-Type', 'X-Hospital-Id'] for the preflight to allow it.
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const activeHospitalId = getActiveHospitalId();
+  const hasReadScope = new URL(path, window.location.origin).searchParams.has('scope');
   const csrfToken = document.cookie
     .split('; ')
     .find((entry) => entry.startsWith('medfolio_csrf='))
@@ -66,7 +69,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     credentials: 'include',
     headers: {
       ...(init?.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : undefined),
-      ...(activeHospitalId ? { 'X-Hospital-Id': activeHospitalId } : undefined),
+      ...(activeHospitalId && !hasReadScope ? { 'X-Hospital-Id': activeHospitalId } : undefined),
       ...(csrfToken ? { 'X-CSRF-Token': decodeURIComponent(csrfToken) } : undefined),
       ...init?.headers,
     },
@@ -88,6 +91,7 @@ const patchJson = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined });
 
 const deleteJson = <T>(path: string) => request<T>(path, { method: 'DELETE' });
+const hospitalInit = (hospitalId?: string): RequestInit | undefined => hospitalId ? { headers: { 'X-Hospital-Id': hospitalId } } : undefined;
 
 export interface AuthUser {
   id: string;
@@ -212,28 +216,42 @@ export interface UtenteBody {
   dataNascimento: string | null;
 }
 
-export function getUtentes(): Promise<Utente[]> {
-  return request('/utentes');
+export function getUtentes(hospitalId?: string): Promise<Utente[]> {
+  return request('/utentes', hospitalInit(hospitalId));
 }
 
-export function getUtente(id: string): Promise<Utente> {
-  return request(`/utentes/${id}`);
+export function getUtente(id: string, hospitalId?: string): Promise<Utente> {
+  return request(`/utentes/${id}`, hospitalInit(hospitalId));
 }
 
-export function getUtenteByProcesso(processo: string): Promise<{ utente: Utente | null }> {
-  return request(`/utentes/processo/${encodeURIComponent(processo)}`);
+export interface UtenteMulti extends Utente { hospitalNome: string }
+export function getUtentesMulti(scope: HospitalScope, limit = 10, offset = 0, search = ''): Promise<{ rows: UtenteMulti[]; total: number }> {
+  const params = scopeParams(scope);
+  params.set('limit', String(limit)); params.set('offset', String(offset));
+  if (search) params.set('search', search);
+  return request(`/utentes/multi?${params}`);
 }
 
-export function createUtente(body: UtenteBody): Promise<Utente> {
-  return postJson('/utentes', body);
+export function exportUtentes(scope: HospitalScope, search = ''): Promise<void> {
+  const params = scopeParams(scope);
+  if (search) params.set('search', search);
+  return download(`/utentes/multi/export?${params}`, 'utentes.xlsx');
 }
 
-export function updateUtente(id: string, body: Partial<UtenteBody>): Promise<Utente> {
-  return patchJson(`/utentes/${id}`, body);
+export function getUtenteByProcesso(processo: string, hospitalId?: string): Promise<{ utente: Utente | null }> {
+  return request(`/utentes/processo/${encodeURIComponent(processo)}`, hospitalInit(hospitalId));
 }
 
-export function deleteUtente(id: string): Promise<void> {
-  return deleteJson(`/utentes/${id}`);
+export function createUtente(body: UtenteBody, hospitalId?: string): Promise<Utente> {
+  return request('/utentes', { method: 'POST', body: JSON.stringify(body), headers: hospitalId ? { 'X-Hospital-Id': hospitalId } : undefined });
+}
+
+export function updateUtente(id: string, body: Partial<UtenteBody>, hospitalId?: string): Promise<Utente> {
+  return request(`/utentes/${id}`, { method: 'PATCH', body: JSON.stringify(body), headers: hospitalId ? { 'X-Hospital-Id': hospitalId } : undefined });
+}
+
+export function deleteUtente(id: string, hospitalId?: string): Promise<void> {
+  return request(`/utentes/${id}`, { method: 'DELETE', headers: hospitalId ? { 'X-Hospital-Id': hospitalId } : undefined });
 }
 
 // ── Especialidades (gestão de dados) ────────────────────────────────────
@@ -256,8 +274,8 @@ export interface EspecialidadeBody {
   descricao: string | null;
 }
 
-export function listEspecialidades(): Promise<EspecialidadeRow[]> {
-  return request('/especialidades');
+export function listEspecialidades(hospitalId?: string): Promise<EspecialidadeRow[]> {
+  return request('/especialidades', hospitalInit(hospitalId));
 }
 
 export function getEspecialidade(id: string): Promise<EspecialidadeRow> {
@@ -294,8 +312,8 @@ export interface ZonaAnatomicaBody {
   descricao: string | null;
 }
 
-export function getZonasAnatomicas(): Promise<ZonaAnatomica[]> {
-  return request('/zonas-anatomicas');
+export function getZonasAnatomicas(hospitalId?: string): Promise<ZonaAnatomica[]> {
+  return request('/zonas-anatomicas', hospitalInit(hospitalId));
 }
 
 export function getZonaAnatomica(id: string): Promise<ZonaAnatomica> {
@@ -340,16 +358,16 @@ export interface DiagnosticoBody {
   descricao?: string | null;
 }
 
-export function getDiagnosticos(): Promise<Diagnostico[]> {
-  return request('/diagnosticos');
+export function getDiagnosticos(hospitalId?: string): Promise<Diagnostico[]> {
+  return request('/diagnosticos', hospitalInit(hospitalId));
 }
 
 export function getDiagnostico(id: string): Promise<Diagnostico> {
   return request(`/diagnosticos/${id}`);
 }
 
-export function createDiagnostico(body: DiagnosticoBody): Promise<Diagnostico> {
-  return postJson('/diagnosticos', body);
+export function createDiagnostico(body: DiagnosticoBody, hospitalId?: string): Promise<Diagnostico> {
+  return request('/diagnosticos', { method: 'POST', body: JSON.stringify(body), headers: hospitalId ? { 'X-Hospital-Id': hospitalId } : undefined });
 }
 
 export function updateDiagnostico(id: string, body: Partial<DiagnosticoBody>): Promise<Diagnostico> {
@@ -379,16 +397,16 @@ export interface ProcedimentoBody {
   nome: string;
 }
 
-export function getProcedimentos(): Promise<Procedimento[]> {
-  return request('/procedimentos');
+export function getProcedimentos(hospitalId?: string): Promise<Procedimento[]> {
+  return request('/procedimentos', hospitalInit(hospitalId));
 }
 
 export function getProcedimento(id: string): Promise<Procedimento> {
   return request(`/procedimentos/${id}`);
 }
 
-export function createProcedimento(body: ProcedimentoBody): Promise<Procedimento> {
-  return postJson('/procedimentos', body);
+export function createProcedimento(body: ProcedimentoBody, hospitalId?: string): Promise<Procedimento> {
+  return request('/procedimentos', { method: 'POST', body: JSON.stringify(body), headers: hospitalId ? { 'X-Hospital-Id': hospitalId } : undefined });
 }
 
 export function updateProcedimento(id: string, body: Partial<ProcedimentoBody>): Promise<Procedimento> {
@@ -532,8 +550,8 @@ export function deleteFormacao(id: string): Promise<void> {
 
 // ── Catálogos de referência (dropdowns do registo) ────────────────────────
 
-export function getCatalogosRegisto(): Promise<CatalogosRegisto> {
-  return request('/catalogos/registo');
+export function getCatalogosRegisto(hospitalId?: string): Promise<CatalogosRegisto> {
+  return request('/catalogos/registo', hospitalInit(hospitalId));
 }
 
 // ── Registos cirúrgicos ───────────────────────────────────────────────────
@@ -548,8 +566,8 @@ export interface RegistoFiltros {
   tipoDeCirurgiaIds?: string[];
 }
 
-export function getRegistos(filtros?: RegistoFiltros): Promise<RegistoResumo[]> {
-  const params = new URLSearchParams();
+function registoParams(scope: HospitalScope, filtros?: RegistoFiltros): URLSearchParams {
+  const params = scopeParams(scope);
   if (filtros?.search) params.set('search', filtros.search);
   if (filtros?.dataInicio) params.set('dataInicio', filtros.dataInicio);
   if (filtros?.dataFim) params.set('dataFim', filtros.dataFim);
@@ -557,37 +575,51 @@ export function getRegistos(filtros?: RegistoFiltros): Promise<RegistoResumo[]> 
   if (filtros?.procedimentoId) params.set('procedimentoId', filtros.procedimentoId);
   if (filtros?.funcaoCirurgiaoId) params.set('funcaoCirurgiaoId', filtros.funcaoCirurgiaoId);
   filtros?.tipoDeCirurgiaIds?.forEach((id) => params.append('tipoDeCirurgiaIds', id));
-  const qs = params.toString();
-  return request(`/registos-cirurgicos${qs ? `?${qs}` : ''}`);
+  return params;
 }
 
-export function getRegisto(id: string): Promise<RegistoDetalhe> {
-  return request(`/registos-cirurgicos/${id}`);
+export interface RegistoMultiResumo extends RegistoResumo {
+  hospitalId: string;
+  hospitalNome: string;
 }
 
-export function createRegisto(body: CreateRegisto): Promise<RegistoDetalhe> {
-  return postJson('/registos-cirurgicos', body);
+export interface RegistoPage { rows: RegistoMultiResumo[]; total: number }
+
+export interface RegistoStatistics {
+  totalRegistos: number;
+  totalCirurgias: number;
+  perHospital: { hospitalId: string; hospitalNome: string; registos: number; cirurgias: number }[];
+  evolution: { month: string; registos: number }[];
 }
 
-export function updateRegisto(id: string, body: CreateRegisto): Promise<RegistoDetalhe> {
-  return patchJson(`/registos-cirurgicos/${id}`, body);
+export function getRegistos(scope: HospitalScope, filtros?: RegistoFiltros, limit = 10, offset = 0): Promise<RegistoPage> {
+  const params = registoParams(scope, filtros);
+  params.set('limit', String(limit)); params.set('offset', String(offset));
+  return request(`/registos-cirurgicos?${params}`);
 }
 
-export function deleteRegisto(id: string): Promise<void> {
-  return deleteJson(`/registos-cirurgicos/${id}`);
+export function getRegistoStatistics(scope: HospitalScope, filtros?: RegistoFiltros): Promise<RegistoStatistics> {
+  return request(`/registos-cirurgicos/statistics?${registoParams(scope, filtros)}`);
 }
 
-export function exportRegistos(filtros?: RegistoFiltros): Promise<void> {
-  const params = new URLSearchParams();
-  if (filtros?.search) params.set('search', filtros.search);
-  if (filtros?.dataInicio) params.set('dataInicio', filtros.dataInicio);
-  if (filtros?.dataFim) params.set('dataFim', filtros.dataFim);
-  if (filtros?.diagnosticoId) params.set('diagnosticoId', filtros.diagnosticoId);
-  if (filtros?.procedimentoId) params.set('procedimentoId', filtros.procedimentoId);
-  if (filtros?.funcaoCirurgiaoId) params.set('funcaoCirurgiaoId', filtros.funcaoCirurgiaoId);
-  filtros?.tipoDeCirurgiaIds?.forEach((id) => params.append('tipoDeCirurgiaIds', id));
-  const qs = params.toString();
-  return download(`/registos-cirurgicos/export${qs ? `?${qs}` : ''}`, 'registos-cirurgicos.xlsx');
+export function getRegisto(id: string, hospitalId: string): Promise<RegistoDetalhe> {
+  return request(`/registos-cirurgicos/${id}`, { headers: { 'X-Hospital-Id': hospitalId } });
+}
+
+export function createRegisto(body: CreateRegisto, hospitalId: string): Promise<RegistoDetalhe> {
+  return request('/registos-cirurgicos', { method: 'POST', body: JSON.stringify(body), headers: { 'X-Hospital-Id': hospitalId } });
+}
+
+export function updateRegisto(id: string, body: CreateRegisto, hospitalId: string): Promise<RegistoDetalhe> {
+  return request(`/registos-cirurgicos/${id}`, { method: 'PATCH', body: JSON.stringify(body), headers: { 'X-Hospital-Id': hospitalId } });
+}
+
+export function deleteRegisto(id: string, hospitalId: string): Promise<void> {
+  return request(`/registos-cirurgicos/${id}`, { method: 'DELETE', headers: { 'X-Hospital-Id': hospitalId } });
+}
+
+export function exportRegistos(scope: HospitalScope, filtros?: RegistoFiltros): Promise<void> {
+  return download(`/registos-cirurgicos/export?${registoParams(scope, filtros)}`, 'registos-cirurgicos.xlsx');
 }
 
 // ── Catálogos: Tipos de Cirurgia, Funções Cirurgião, Tipos de Abordagem ──────
@@ -651,10 +683,14 @@ export function deleteTipoDeAbordagem(id: string): Promise<void> {
 
 // ── Painel + relatório ────────────────────────────────────────────────────
 
-export function getDashboard(): Promise<Dashboard> {
-  return request('/dashboard');
+export function getDashboard(scope: HospitalScope): Promise<Dashboard> {
+  return request(`/dashboard?${scopeParams(scope)}`);
 }
 
-export function getCirurgiasPorArea(): Promise<CirurgiasPorArea> {
-  return request('/cirurgias-por-area');
+export function getCirurgiasPorArea(scope: HospitalScope): Promise<{ total: number; reports: (CirurgiasPorArea & { hospitalId: string; hospitalNome: string })[] }> {
+  return request(`/cirurgias-por-area?${scopeParams(scope)}`);
+}
+
+export function exportCirurgiasPorArea(scope: HospitalScope): Promise<void> {
+  return download(`/cirurgias-por-area/export?${scopeParams(scope)}`, 'cirurgias-por-area.xlsx');
 }

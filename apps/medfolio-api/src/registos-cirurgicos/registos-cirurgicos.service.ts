@@ -29,6 +29,9 @@ import type {
 import {
   SQL,
   and,
+  asc,
+  count,
+  countDistinct,
   desc,
   eq,
   exists,
@@ -37,7 +40,9 @@ import {
   inArray,
   isNull,
   lte,
+  lt,
   or,
+  sql,
 } from 'drizzle-orm';
 import { DRIZZLE } from '../database/drizzle.constants';
 
@@ -54,6 +59,249 @@ import { DRIZZLE } from '../database/drizzle.constants';
 @Injectable()
 export class RegistosCirurgicosService {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+
+  private multiConditions(
+    hospitalIds: string[],
+    userId: string,
+    filtros: RegistoFiltros,
+  ) {
+    const conditions: SQL[] = [
+      inArray(registoCirurgicos.hospitalId, hospitalIds),
+      eq(registoCirurgicos.userId, userId),
+      isNull(registoCirurgicos.deletedAt),
+    ];
+    if (filtros.search)
+      conditions.push(
+        or(
+          ilike(utentes.nome, `%${filtros.search}%`),
+          ilike(utentes.processo, `%${filtros.search}%`),
+        )!,
+      );
+    if (filtros.dataInicio)
+      conditions.push(gte(registoCirurgicos.dataCirurgia, filtros.dataInicio));
+    if (filtros.dataFim)
+      conditions.push(lte(registoCirurgicos.dataCirurgia, filtros.dataFim));
+    if (filtros.tipoDeCirurgiaIds?.length)
+      conditions.push(
+        inArray(registoCirurgicos.tipoDeCirurgiaId, filtros.tipoDeCirurgiaIds),
+      );
+    for (const [key, column] of [
+      [filtros.diagnosticoId, cirurgias.diagnosticoId],
+      [filtros.procedimentoId, cirurgias.procedimentoId],
+      [filtros.funcaoCirurgiaoId, cirurgias.funcaoCirurgiaoId],
+    ] as const) {
+      if (key)
+        conditions.push(
+          exists(
+            this.db
+              .select({ id: cirurgias.id })
+              .from(cirurgias)
+              .where(
+                and(
+                  eq(cirurgias.registoCirurgicoId, registoCirurgicos.id),
+                  eq(column, key),
+                  isNull(cirurgias.deletedAt),
+                ),
+              ),
+          ),
+        );
+    }
+    return and(...conditions)!;
+  }
+
+  async listMulti(
+    hospitalIds: string[],
+    userId: string,
+    limit: number,
+    offset: number,
+    filtros: RegistoFiltros,
+    options?: { cursor?: { data: string; id: string }; includeTotal?: boolean },
+  ) {
+    const scope = this.multiConditions(hospitalIds, userId, filtros);
+    const [totalRow] =
+      options?.includeTotal === false
+        ? [{ value: 0 }]
+        : await this.db
+            .select({ value: count() })
+            .from(registoCirurgicos)
+            .leftJoin(utentes, eq(registoCirurgicos.utenteId, utentes.id))
+            .where(scope);
+    const cursor = options?.cursor;
+    const pageScope = cursor
+      ? and(
+          scope,
+          or(
+            lt(registoCirurgicos.dataCirurgia, cursor.data),
+            and(
+              eq(registoCirurgicos.dataCirurgia, cursor.data),
+              lt(registoCirurgicos.id, cursor.id),
+            ),
+          ),
+        )
+      : scope;
+    const rows = await this.db
+      .select({
+        id: registoCirurgicos.id,
+        hospitalId: registoCirurgicos.hospitalId,
+        hospitalNome: hospitals.nome,
+        utenteNome: utentes.nome,
+        utenteProcesso: utentes.processo,
+        utenteSexo: utentes.sexo,
+        especialidadeNome: especialidades.nome,
+        dataCirurgia: registoCirurgicos.dataCirurgia,
+        idadeCirurgia: registoCirurgicos.idadeCirurgia,
+        observacoes: registoCirurgicos.observacoes,
+        tipoDeCirurgiaNome: tipoDeCirurgias.nome,
+        tipoDeAbordagemNome: tipoDeAbordagens.nome,
+        ambulatorio: registoCirurgicos.ambulatorio,
+      })
+      .from(registoCirurgicos)
+      .innerJoin(hospitals, eq(registoCirurgicos.hospitalId, hospitals.id))
+      .leftJoin(utentes, eq(registoCirurgicos.utenteId, utentes.id))
+      .leftJoin(
+        especialidades,
+        eq(registoCirurgicos.especialidadeId, especialidades.id),
+      )
+      .leftJoin(
+        tipoDeCirurgias,
+        eq(registoCirurgicos.tipoDeCirurgiaId, tipoDeCirurgias.id),
+      )
+      .leftJoin(
+        tipoDeAbordagens,
+        eq(registoCirurgicos.tipoDeAbordagemId, tipoDeAbordagens.id),
+      )
+      .where(pageScope)
+      .orderBy(desc(registoCirurgicos.dataCirurgia), desc(registoCirurgicos.id))
+      .limit(Math.min(Math.max(limit, 1), 100))
+      .offset(Math.max(offset, 0));
+    const counts = rows.length
+      ? await this.db
+          .select({ registoId: cirurgias.registoCirurgicoId, value: count() })
+          .from(cirurgias)
+          .where(
+            and(
+              inArray(
+                cirurgias.registoCirurgicoId,
+                rows.map((r) => r.id),
+              ),
+              isNull(cirurgias.deletedAt),
+            ),
+          )
+          .groupBy(cirurgias.registoCirurgicoId)
+      : [];
+    const byId = new Map(counts.map((r) => [r.registoId, r.value]));
+    return {
+      total: totalRow.value,
+      rows: rows.map((r) => ({
+        ...r,
+        utenteProcesso: r.utenteProcesso ?? '',
+        numeroCirurgias: byId.get(r.id) ?? 0,
+      })),
+    };
+  }
+
+  async statistics(
+    hospitalIds: string[],
+    userId: string,
+    filtros: RegistoFiltros,
+  ) {
+    const scope = this.multiConditions(hospitalIds, userId, filtros);
+    const names = await this.db
+      .select({ id: hospitals.id, nome: hospitals.nome })
+      .from(hospitals)
+      .where(inArray(hospitals.id, hospitalIds))
+      .orderBy(asc(hospitals.nome));
+    const counted = await this.db
+      .select({
+        hospitalId: hospitals.id,
+        hospitalNome: hospitals.nome,
+        registos: countDistinct(registoCirurgicos.id),
+        cirurgias: count(cirurgias.id),
+      })
+      .from(registoCirurgicos)
+      .innerJoin(hospitals, eq(registoCirurgicos.hospitalId, hospitals.id))
+      .leftJoin(utentes, eq(registoCirurgicos.utenteId, utentes.id))
+      .leftJoin(
+        cirurgias,
+        and(
+          eq(cirurgias.registoCirurgicoId, registoCirurgicos.id),
+          isNull(cirurgias.deletedAt),
+        ),
+      )
+      .where(scope)
+      .groupBy(hospitals.id, hospitals.nome)
+      .orderBy(asc(hospitals.nome));
+    const countByHospital = new Map(
+      counted.map((row) => [row.hospitalId, row]),
+    );
+    const perHospital = names.map(
+      (hospital) =>
+        countByHospital.get(hospital.id) ?? {
+          hospitalId: hospital.id,
+          hospitalNome: hospital.nome,
+          registos: 0,
+          cirurgias: 0,
+        },
+    );
+    const month = sql<string>`to_char(${registoCirurgicos.dataCirurgia}, 'YYYY-MM')`;
+    const evolution = await this.db
+      .select({ month, registos: count() })
+      .from(registoCirurgicos)
+      .leftJoin(utentes, eq(registoCirurgicos.utenteId, utentes.id))
+      .where(scope)
+      .groupBy(month)
+      .orderBy(month);
+    return {
+      totalRegistos: perHospital.reduce((n, h) => n + h.registos, 0),
+      totalCirurgias: perHospital.reduce((n, h) => n + h.cirurgias, 0),
+      perHospital,
+      evolution,
+    };
+  }
+
+  async exportSurgeryLabels(
+    hospitalIds: string[],
+    userId: string,
+    registoIds: string[],
+  ) {
+    if (!registoIds.length) return new Map<string, string[]>();
+    const rows = await this.db
+      .select({
+        registoId: cirurgias.registoCirurgicoId,
+        diagnostico: diagnosticos.nome,
+        procedimento: procedimentos.nome,
+        funcao: funcaoCirurgiaos.nome,
+      })
+      .from(cirurgias)
+      .innerJoin(
+        registoCirurgicos,
+        eq(cirurgias.registoCirurgicoId, registoCirurgicos.id),
+      )
+      .leftJoin(diagnosticos, eq(cirurgias.diagnosticoId, diagnosticos.id))
+      .leftJoin(procedimentos, eq(cirurgias.procedimentoId, procedimentos.id))
+      .leftJoin(
+        funcaoCirurgiaos,
+        eq(cirurgias.funcaoCirurgiaoId, funcaoCirurgiaos.id),
+      )
+      .where(
+        and(
+          inArray(cirurgias.registoCirurgicoId, registoIds),
+          inArray(registoCirurgicos.hospitalId, hospitalIds),
+          eq(registoCirurgicos.userId, userId),
+          isNull(cirurgias.deletedAt),
+          isNull(registoCirurgicos.deletedAt),
+        ),
+      );
+    const labels = new Map<string, string[]>();
+    for (const row of rows) {
+      const values = labels.get(row.registoId) ?? [];
+      values.push(
+        `${row.diagnostico ?? 'N/A'} — ${row.procedimento ?? 'N/A'} (${row.funcao ?? 'N/A'})`,
+      );
+      labels.set(row.registoId, values);
+    }
+    return labels;
+  }
 
   async list(
     hospitalId: string,
@@ -197,23 +445,6 @@ export class RegistosCirurgicosService {
       utenteProcesso: r.utenteProcesso ?? '',
       numeroCirurgias: countByRegisto.get(r.id) ?? 0,
     }));
-  }
-
-  async exportRows(hospitalId: string, userId: string, filtros?: RegistoFiltros) {
-    const [hospital] = await this.db.select({ nome: hospitals.nome }).from(hospitals)
-      .where(eq(hospitals.id, hospitalId)).limit(1);
-    const result: Array<RegistoDetalhe & { hospitalNome: string; utenteSexo: string | null }> = [];
-    for (let offset = 0; ; offset += 100) {
-      const page = await this.list(hospitalId, userId, 100, offset, filtros);
-      if (page.length === 0) break;
-      const details = await Promise.all(page.map((row) => this.findOne(hospitalId, userId, row.id)));
-      const sexos = await this.db.select({ id: utentes.id, sexo: utentes.sexo }).from(utentes)
-        .where(inArray(utentes.id, details.map((row) => row.utenteId)));
-      const sexoById = new Map(sexos.map((row) => [row.id, row.sexo]));
-      result.push(...details.map((row) => ({ ...row, hospitalNome: hospital?.nome ?? 'N/A', utenteSexo: sexoById.get(row.utenteId) ?? null })));
-      if (page.length < 100) break;
-    }
-    return result;
   }
 
   async findOne(

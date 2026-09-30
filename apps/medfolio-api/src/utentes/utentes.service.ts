@@ -6,18 +6,118 @@ import {
 } from '@nestjs/common';
 import {
   auditEvents,
+  hospitals,
   registoCirurgicos,
   type Database,
   utentes,
 } from '@nexo-centro/db';
 import type { CreateUtente, UpdateUtente } from '@nexo-centro/schemas';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  eq,
+  gt,
+  ilike,
+  inArray,
+  isNull,
+  or,
+} from 'drizzle-orm';
 import { DRIZZLE } from '../database/drizzle.constants';
 import { pgConstraintName, pgErrorCode } from '../common/pg-error.util';
 
 @Injectable()
 export class UtentesService {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+
+  private multiCondition(
+    hospitalIds: string[],
+    userId: string,
+    search?: string,
+  ) {
+    return and(
+      inArray(utentes.hospitalId, hospitalIds),
+      eq(utentes.createdByUserId, userId),
+      isNull(utentes.deletedAt),
+      search
+        ? or(
+            ilike(utentes.nome, `%${search}%`),
+            ilike(utentes.processo, `%${search}%`),
+          )
+        : undefined,
+    );
+  }
+
+  async hospitalNames(hospitalIds: string[]) {
+    return this.db
+      .select({ id: hospitals.id, nome: hospitals.nome })
+      .from(hospitals)
+      .where(inArray(hospitals.id, hospitalIds))
+      .orderBy(asc(hospitals.nome));
+  }
+
+  async exportPage(
+    hospitalIds: string[],
+    userId: string,
+    search?: string,
+    afterId?: string,
+  ) {
+    return this.db
+      .select({
+        id: utentes.id,
+        nome: utentes.nome,
+        sexo: utentes.sexo,
+        dataNascimento: utentes.dataNascimento,
+        processo: utentes.processo,
+        hospitalId: utentes.hospitalId,
+        hospitalNome: hospitals.nome,
+      })
+      .from(utentes)
+      .innerJoin(hospitals, eq(utentes.hospitalId, hospitals.id))
+      .where(
+        and(
+          this.multiCondition(hospitalIds, userId, search),
+          afterId ? gt(utentes.id, afterId) : undefined,
+        ),
+      )
+      .orderBy(asc(utentes.id))
+      .limit(100);
+  }
+
+  async listMulti(
+    hospitalIds: string[],
+    userId: string,
+    limit: number,
+    offset: number,
+    search?: string,
+  ) {
+    const condition = this.multiCondition(hospitalIds, userId, search);
+    const [total] = await this.db
+      .select({ value: count() })
+      .from(utentes)
+      .where(condition);
+    const rows = await this.db
+      .select({
+        id: utentes.id,
+        nome: utentes.nome,
+        sexo: utentes.sexo,
+        dataNascimento: utentes.dataNascimento,
+        processo: utentes.processo,
+        hospitalId: utentes.hospitalId,
+        hospitalNome: hospitals.nome,
+        createdByUserId: utentes.createdByUserId,
+        createdAt: utentes.createdAt,
+        updatedAt: utentes.updatedAt,
+        deletedAt: utentes.deletedAt,
+      })
+      .from(utentes)
+      .innerJoin(hospitals, eq(utentes.hospitalId, hospitals.id))
+      .where(condition)
+      .orderBy(asc(utentes.nome), asc(utentes.id))
+      .limit(Math.min(Math.max(limit, 1), 100))
+      .offset(Math.max(offset, 0));
+    return { total: total.value, rows };
+  }
 
   async list(
     hospitalId: string,

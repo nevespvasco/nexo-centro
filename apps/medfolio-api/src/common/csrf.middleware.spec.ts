@@ -10,6 +10,7 @@ function responseMock() {
 function requestMock(overrides: Partial<Request>): Request {
   return {
     method: 'POST',
+    path: '/',
     cookies: {},
     get: jest.fn(() => undefined),
     ...overrides,
