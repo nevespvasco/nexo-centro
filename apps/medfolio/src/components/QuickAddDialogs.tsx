@@ -46,7 +46,7 @@ export function QuickAddDiagnostico({ hospitalId, visible, onHide, onCreated }: 
     setTipo('benigno')
     setZonaId('')
     setError(null)
-    getZonasAnatomicas(hospitalId).then(setZonas).catch(() => null)
+    getZonasAnatomicas({ kind: 'selected', ids: [hospitalId] }).then(setZonas).catch(() => null)
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -133,7 +133,7 @@ export function QuickAddProcedimento({ hospitalId, visible, onHide, onCreated }:
     setNome('')
     setEspecialidadeId('')
     setError(null)
-    listEspecialidades(hospitalId).then(setEspecialidades).catch(() => null)
+    listEspecialidades({ kind: 'selected', ids: [hospitalId] }).then(setEspecialidades).catch(() => null)
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -142,7 +142,7 @@ export function QuickAddProcedimento({ hospitalId, visible, onHide, onCreated }:
     setError(null)
     setSaving(true)
     try {
-      const p = await createProcedimento({ nome, especialidadeId }, hospitalId)
+      const p = await createProcedimento({ nome, especialidadeId, hospitalId })
       onCreated(p)
       onHide()
     } catch (err) {

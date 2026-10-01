@@ -1,6 +1,14 @@
 import { relations } from "drizzle-orm";
 import { adminUsers } from "./admin.js";
 import { passwordResetTokens } from "./auth.js";
+import {
+  especialidadeHospital,
+  funcaoCirurgiaoHospital,
+  procedimentoHospital,
+  tipoDeAbordagemHospital,
+  tipoDeCirurgiaHospital,
+  zonaAnatomicaHospital,
+} from "./catalog-hospitals.js";
 import { hospitalUser, hospitals } from "./hospitals.js";
 import { atividadesCientificas, formacoes } from "./portfolio.js";
 import {
@@ -48,13 +56,13 @@ export const hospitalsRelations = relations(hospitals, ({ many }) => ({
   memberships: many(hospitalUser),
   utentes: many(utentes),
   registoCirurgicos: many(registoCirurgicos),
-  especialidades: many(especialidades),
-  zonaAnatomicas: many(zonaAnatomicas),
   diagnosticos: many(diagnosticos),
-  procedimentos: many(procedimentos),
-  tipoDeCirurgias: many(tipoDeCirurgias),
-  funcaoCirurgiaos: many(funcaoCirurgiaos),
-  tipoDeAbordagens: many(tipoDeAbordagens),
+  especialidadeAssociacoes: many(especialidadeHospital),
+  zonaAnatomicaAssociacoes: many(zonaAnatomicaHospital),
+  procedimentoAssociacoes: many(procedimentoHospital),
+  tipoDeCirurgiaAssociacoes: many(tipoDeCirurgiaHospital),
+  funcaoCirurgiaoAssociacoes: many(funcaoCirurgiaoHospital),
+  tipoDeAbordagemAssociacoes: many(tipoDeAbordagemHospital),
   adminUsers: many(adminUsers),
 }));
 
@@ -85,10 +93,11 @@ export const hospitalUserRelations = relations(hospitalUser, ({ one }) => ({
 export const especialidadesRelations = relations(
   especialidades,
   ({ one, many }) => ({
-    hospital: one(hospitals, {
-      fields: [especialidades.hospitalId],
-      references: [hospitals.id],
+    createdByUser: one(users, {
+      fields: [especialidades.createdByUserId],
+      references: [users.id],
     }),
+    associacoes: many(especialidadeHospital),
     users: many(users),
     procedimentos: many(procedimentos),
     registoCirurgicos: many(registoCirurgicos),
@@ -98,10 +107,11 @@ export const especialidadesRelations = relations(
 export const zonaAnatomicasRelations = relations(
   zonaAnatomicas,
   ({ one, many }) => ({
-    hospital: one(hospitals, {
-      fields: [zonaAnatomicas.hospitalId],
-      references: [hospitals.id],
+    createdByUser: one(users, {
+      fields: [zonaAnatomicas.createdByUserId],
+      references: [users.id],
     }),
+    associacoes: many(zonaAnatomicaHospital),
     diagnosticos: many(diagnosticos),
   }),
 );
@@ -124,10 +134,11 @@ export const diagnosticosRelations = relations(
 export const procedimentosRelations = relations(
   procedimentos,
   ({ one, many }) => ({
-    hospital: one(hospitals, {
-      fields: [procedimentos.hospitalId],
-      references: [hospitals.id],
+    createdByUser: one(users, {
+      fields: [procedimentos.createdByUserId],
+      references: [users.id],
     }),
+    associacoes: many(procedimentoHospital),
     especialidade: one(especialidades, {
       fields: [procedimentos.especialidadeId],
       references: [especialidades.id],
@@ -139,10 +150,11 @@ export const procedimentosRelations = relations(
 export const tipoDeCirurgiasRelations = relations(
   tipoDeCirurgias,
   ({ one, many }) => ({
-    hospital: one(hospitals, {
-      fields: [tipoDeCirurgias.hospitalId],
-      references: [hospitals.id],
+    createdByUser: one(users, {
+      fields: [tipoDeCirurgias.createdByUserId],
+      references: [users.id],
     }),
+    associacoes: many(tipoDeCirurgiaHospital),
     registoCirurgicos: many(registoCirurgicos),
   }),
 );
@@ -150,10 +162,11 @@ export const tipoDeCirurgiasRelations = relations(
 export const funcaoCirurgiaosRelations = relations(
   funcaoCirurgiaos,
   ({ one, many }) => ({
-    hospital: one(hospitals, {
-      fields: [funcaoCirurgiaos.hospitalId],
-      references: [hospitals.id],
+    createdByUser: one(users, {
+      fields: [funcaoCirurgiaos.createdByUserId],
+      references: [users.id],
     }),
+    associacoes: many(funcaoCirurgiaoHospital),
     cirurgias: many(cirurgias),
   }),
 );
@@ -161,11 +174,121 @@ export const funcaoCirurgiaosRelations = relations(
 export const tipoDeAbordagensRelations = relations(
   tipoDeAbordagens,
   ({ one, many }) => ({
+    createdByUser: one(users, {
+      fields: [tipoDeAbordagens.createdByUserId],
+      references: [users.id],
+    }),
+    associacoes: many(tipoDeAbordagemHospital),
+    registoCirurgicos: many(registoCirurgicos),
+  }),
+);
+
+// Relações das tabelas de associação catálogo↔hospital.
+export const especialidadeHospitalRelations = relations(
+  especialidadeHospital,
+  ({ one }) => ({
+    especialidade: one(especialidades, {
+      fields: [especialidadeHospital.especialidadeId],
+      references: [especialidades.id],
+    }),
     hospital: one(hospitals, {
-      fields: [tipoDeAbordagens.hospitalId],
+      fields: [especialidadeHospital.hospitalId],
       references: [hospitals.id],
     }),
-    registoCirurgicos: many(registoCirurgicos),
+    createdByUser: one(users, {
+      fields: [especialidadeHospital.createdByUserId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const zonaAnatomicaHospitalRelations = relations(
+  zonaAnatomicaHospital,
+  ({ one }) => ({
+    zonaAnatomica: one(zonaAnatomicas, {
+      fields: [zonaAnatomicaHospital.zonaAnatomicaId],
+      references: [zonaAnatomicas.id],
+    }),
+    hospital: one(hospitals, {
+      fields: [zonaAnatomicaHospital.hospitalId],
+      references: [hospitals.id],
+    }),
+    createdByUser: one(users, {
+      fields: [zonaAnatomicaHospital.createdByUserId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const procedimentoHospitalRelations = relations(
+  procedimentoHospital,
+  ({ one }) => ({
+    procedimento: one(procedimentos, {
+      fields: [procedimentoHospital.procedimentoId],
+      references: [procedimentos.id],
+    }),
+    hospital: one(hospitals, {
+      fields: [procedimentoHospital.hospitalId],
+      references: [hospitals.id],
+    }),
+    createdByUser: one(users, {
+      fields: [procedimentoHospital.createdByUserId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const tipoDeCirurgiaHospitalRelations = relations(
+  tipoDeCirurgiaHospital,
+  ({ one }) => ({
+    tipoDeCirurgia: one(tipoDeCirurgias, {
+      fields: [tipoDeCirurgiaHospital.tipoDeCirurgiaId],
+      references: [tipoDeCirurgias.id],
+    }),
+    hospital: one(hospitals, {
+      fields: [tipoDeCirurgiaHospital.hospitalId],
+      references: [hospitals.id],
+    }),
+    createdByUser: one(users, {
+      fields: [tipoDeCirurgiaHospital.createdByUserId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const funcaoCirurgiaoHospitalRelations = relations(
+  funcaoCirurgiaoHospital,
+  ({ one }) => ({
+    funcaoCirurgiao: one(funcaoCirurgiaos, {
+      fields: [funcaoCirurgiaoHospital.funcaoCirurgiaoId],
+      references: [funcaoCirurgiaos.id],
+    }),
+    hospital: one(hospitals, {
+      fields: [funcaoCirurgiaoHospital.hospitalId],
+      references: [hospitals.id],
+    }),
+    createdByUser: one(users, {
+      fields: [funcaoCirurgiaoHospital.createdByUserId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const tipoDeAbordagemHospitalRelations = relations(
+  tipoDeAbordagemHospital,
+  ({ one }) => ({
+    tipoDeAbordagem: one(tipoDeAbordagens, {
+      fields: [tipoDeAbordagemHospital.tipoDeAbordagemId],
+      references: [tipoDeAbordagens.id],
+    }),
+    hospital: one(hospitals, {
+      fields: [tipoDeAbordagemHospital.hospitalId],
+      references: [hospitals.id],
+    }),
+    createdByUser: one(users, {
+      fields: [tipoDeAbordagemHospital.createdByUserId],
+      references: [users.id],
+    }),
   }),
 );
 

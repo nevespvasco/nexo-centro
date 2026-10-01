@@ -8,12 +8,17 @@ import {
   auditEvents,
   cirurgias,
   diagnosticos,
+  especialidadeHospital,
   especialidades,
+  funcaoCirurgiaoHospital,
   funcaoCirurgiaos,
   hospitals,
+  procedimentoHospital,
   procedimentos,
   registoCirurgicos,
+  tipoDeAbordagemHospital,
   tipoDeAbordagens,
+  tipoDeCirurgiaHospital,
   tipoDeCirurgias,
   utentes,
   type Database,
@@ -705,26 +710,32 @@ export class RegistosCirurgicosService {
       throw new BadRequestException('Utente inválido.');
     }
 
-    await this.assertCatalog(
-      tipoDeCirurgias,
+    await this.assertShared(
       hospitalId,
       [payload.tipoDeCirurgiaId],
       'Tipo de cirurgia inválido.',
+      tipoDeCirurgias,
+      tipoDeCirurgiaHospital,
+      tipoDeCirurgiaHospital.tipoDeCirurgiaId,
     );
     if (payload.especialidadeId) {
-      await this.assertCatalog(
-        especialidades,
+      await this.assertShared(
         hospitalId,
         [payload.especialidadeId],
         'Especialidade inválida.',
+        especialidades,
+        especialidadeHospital,
+        especialidadeHospital.especialidadeId,
       );
     }
     if (payload.tipoDeAbordagemId) {
-      await this.assertCatalog(
-        tipoDeAbordagens,
+      await this.assertShared(
         hospitalId,
         [payload.tipoDeAbordagemId],
         'Tipo de abordagem inválido.',
+        tipoDeAbordagens,
+        tipoDeAbordagemHospital,
+        tipoDeAbordagemHospital.tipoDeAbordagemId,
       );
     }
 
@@ -741,53 +752,107 @@ export class RegistosCirurgicosService {
           .filter((v): v is string => v !== null),
       ),
     ];
-    await this.assertCatalog(
-      diagnosticos,
+    // Diagnósticos não são partilháveis: mantêm o âmbito hospital_id / global.
+    await this.assertDiagnosticos(
       hospitalId,
       diagnosticoIds,
       'Diagnóstico inválido.',
     );
-    await this.assertCatalog(
-      procedimentos,
+    await this.assertShared(
       hospitalId,
       procedimentoIds,
       'Procedimento inválido.',
+      procedimentos,
+      procedimentoHospital,
+      procedimentoHospital.procedimentoId,
     );
     if (funcaoIds.length > 0) {
-      await this.assertCatalog(
-        funcaoCirurgiaos,
+      await this.assertShared(
         hospitalId,
         funcaoIds,
         'Função de cirurgião inválida.',
+        funcaoCirurgiaos,
+        funcaoCirurgiaoHospital,
+        funcaoCirurgiaoHospital.funcaoCirurgiaoId,
       );
     }
   }
 
-  /** Cada id tem de existir e ser do hospital ativo ou global (hospital_id NULL). */
-  private async assertCatalog(
-    table:
-      | typeof diagnosticos
+  /**
+   * Catálogo partilhável: cada id tem de existir e estar disponível no hospital
+   * ativo — item global (is_global) ou com associação ativa a este hospital.
+   */
+  private async assertShared(
+    hospitalId: string,
+    ids: string[],
+    message: string,
+    itemTable:
+      | typeof especialidades
       | typeof procedimentos
       | typeof funcaoCirurgiaos
-      | typeof especialidades
       | typeof tipoDeCirurgias
       | typeof tipoDeAbordagens,
+    assocTable:
+      | typeof especialidadeHospital
+      | typeof procedimentoHospital
+      | typeof funcaoCirurgiaoHospital
+      | typeof tipoDeCirurgiaHospital
+      | typeof tipoDeAbordagemHospital,
+    assocItemFk:
+      | typeof especialidadeHospital.especialidadeId
+      | typeof procedimentoHospital.procedimentoId
+      | typeof funcaoCirurgiaoHospital.funcaoCirurgiaoId
+      | typeof tipoDeCirurgiaHospital.tipoDeCirurgiaId
+      | typeof tipoDeAbordagemHospital.tipoDeAbordagemId,
+  ): Promise<void> {
+    if (ids.length === 0) return;
+    const found = await this.db
+      .select({ id: itemTable.id })
+      .from(itemTable)
+      .where(
+        and(
+          inArray(itemTable.id, ids),
+          isNull(itemTable.deletedAt),
+          sql`(${itemTable.isGlobal} = true OR ${exists(
+            this.db
+              .select({ one: sql`1` })
+              .from(assocTable)
+              .where(
+                and(
+                  eq(assocItemFk, itemTable.id),
+                  eq(assocTable.hospitalId, hospitalId),
+                  isNull(assocTable.deletedAt),
+                ),
+              ),
+          )})`,
+        ),
+      );
+    if (found.length !== new Set(ids).size) {
+      throw new BadRequestException(message);
+    }
+  }
+
+  /** Diagnósticos: âmbito hospital_id do próprio item, ou global (hospital_id NULL). */
+  private async assertDiagnosticos(
     hospitalId: string,
     ids: string[],
     message: string,
   ): Promise<void> {
     if (ids.length === 0) return;
     const found = await this.db
-      .select({ id: table.id })
-      .from(table)
+      .select({ id: diagnosticos.id })
+      .from(diagnosticos)
       .where(
         and(
-          inArray(table.id, ids),
-          or(eq(table.hospitalId, hospitalId), isNull(table.hospitalId)),
-          isNull(table.deletedAt),
+          inArray(diagnosticos.id, ids),
+          or(
+            eq(diagnosticos.hospitalId, hospitalId),
+            isNull(diagnosticos.hospitalId),
+          ),
+          isNull(diagnosticos.deletedAt),
         ),
       );
-    if (found.length !== ids.length) {
+    if (found.length !== new Set(ids).size) {
       throw new BadRequestException(message);
     }
   }

@@ -1,0 +1,3746 @@
+{
+  "id": "3e3006f7-e1ac-4a07-9e0b-ffc46d46cd6d",
+  "prevId": "ae1ead22-f3db-42b3-beee-c27b275f0347",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "session_version": {
+          "name": "session_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "failed_login_attempts": {
+          "name": "failed_login_attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "login_locked_until": {
+          "name": "login_locked_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "failed_two_factor_attempts": {
+          "name": "failed_two_factor_attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "two_factor_locked_until": {
+          "name": "two_factor_locked_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "especialidade_id": {
+          "name": "especialidade_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email_verified_at": {
+          "name": "email_verified_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "two_factor_secret": {
+          "name": "two_factor_secret",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pending_two_factor_secret": {
+          "name": "pending_two_factor_secret",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "two_factor_recovery_codes": {
+          "name": "two_factor_recovery_codes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "two_factor_confirmed_at": {
+          "name": "two_factor_confirmed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "two_factor_prompted_at": {
+          "name": "two_factor_prompted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "users_email_uq": {
+          "name": "users_email_uq",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "users_especialidade_id_idx": {
+          "name": "users_especialidade_id_idx",
+          "columns": [
+            {
+              "expression": "especialidade_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "users_is_active_idx": {
+          "name": "users_is_active_idx",
+          "columns": [
+            {
+              "expression": "is_active",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "users_especialidade_id_especialidades_id_fk": {
+          "name": "users_especialidade_id_especialidades_id_fk",
+          "tableFrom": "users",
+          "tableTo": "especialidades",
+          "columnsFrom": [
+            "especialidade_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.password_reset_tokens": {
+      "name": "password_reset_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "used_at": {
+          "name": "used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "password_reset_tokens_user_id_idx": {
+          "name": "password_reset_tokens_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "password_reset_tokens_token_hash_idx": {
+          "name": "password_reset_tokens_token_hash_idx",
+          "columns": [
+            {
+              "expression": "token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "password_reset_tokens_user_id_users_id_fk": {
+          "name": "password_reset_tokens_user_id_users_id_fk",
+          "tableFrom": "password_reset_tokens",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hospital_user": {
+      "name": "hospital_user",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hospital_id": {
+          "name": "hospital_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "membership_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "can_approve_members": {
+          "name": "can_approve_members",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "requested_at": {
+          "name": "requested_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "approved_by_user_id": {
+          "name": "approved_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "approved_at": {
+          "name": "approved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "hospital_user_hospital_id_user_id_uq": {
+          "name": "hospital_user_hospital_id_user_id_uq",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "hospital_user_hospital_id_idx": {
+          "name": "hospital_user_hospital_id_idx",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "hospital_user_user_id_idx": {
+          "name": "hospital_user_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "hospital_user_status_idx": {
+          "name": "hospital_user_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "hospital_user_hospital_id_status_idx": {
+          "name": "hospital_user_hospital_id_status_idx",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "hospital_user_hospital_id_hospitals_id_fk": {
+          "name": "hospital_user_hospital_id_hospitals_id_fk",
+          "tableFrom": "hospital_user",
+          "tableTo": "hospitals",
+          "columnsFrom": [
+            "hospital_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "hospital_user_user_id_users_id_fk": {
+          "name": "hospital_user_user_id_users_id_fk",
+          "tableFrom": "hospital_user",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "hospital_user_approved_by_user_id_users_id_fk": {
+          "name": "hospital_user_approved_by_user_id_users_id_fk",
+          "tableFrom": "hospital_user",
+          "tableTo": "users",
+          "columnsFrom": [
+            "approved_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hospitals": {
+      "name": "hospitals",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "hospitals_nome_uq": {
+          "name": "hospitals_nome_uq",
+          "columns": [
+            {
+              "expression": "nome",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.diagnosticos": {
+      "name": "diagnosticos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "zona_anatomica_id": {
+          "name": "zona_anatomica_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "tipo_lesao",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hospital_id": {
+          "name": "hospital_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "diagnosticos_hospital_id_nome_uq": {
+          "name": "diagnosticos_hospital_id_nome_uq",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "nome",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null and hospital_id is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "diagnosticos_nome_global_uq": {
+          "name": "diagnosticos_nome_global_uq",
+          "columns": [
+            {
+              "expression": "nome",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null and hospital_id is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "diagnosticos_hospital_id_idx": {
+          "name": "diagnosticos_hospital_id_idx",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "diagnosticos_zona_anatomica_id_idx": {
+          "name": "diagnosticos_zona_anatomica_id_idx",
+          "columns": [
+            {
+              "expression": "zona_anatomica_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "diagnosticos_zona_anatomica_id_zona_anatomicas_id_fk": {
+          "name": "diagnosticos_zona_anatomica_id_zona_anatomicas_id_fk",
+          "tableFrom": "diagnosticos",
+          "tableTo": "zona_anatomicas",
+          "columnsFrom": [
+            "zona_anatomica_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "diagnosticos_hospital_id_hospitals_id_fk": {
+          "name": "diagnosticos_hospital_id_hospitals_id_fk",
+          "tableFrom": "diagnosticos",
+          "tableTo": "hospitals",
+          "columnsFrom": [
+            "hospital_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.especialidades": {
+      "name": "especialidades",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_global": {
+          "name": "is_global",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "especialidades_nome_global_uq": {
+          "name": "especialidades_nome_global_uq",
+          "columns": [
+            {
+              "expression": "nome",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null and is_global",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "especialidades_created_by_user_id_idx": {
+          "name": "especialidades_created_by_user_id_idx",
+          "columns": [
+            {
+              "expression": "created_by_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "especialidades_created_by_user_id_users_id_fk": {
+          "name": "especialidades_created_by_user_id_users_id_fk",
+          "tableFrom": "especialidades",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.funcao_cirurgiaos": {
+      "name": "funcao_cirurgiaos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_global": {
+          "name": "is_global",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "funcao_cirurgiaos_nome_global_uq": {
+          "name": "funcao_cirurgiaos_nome_global_uq",
+          "columns": [
+            {
+              "expression": "nome",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null and is_global",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "funcao_cirurgiaos_created_by_user_id_idx": {
+          "name": "funcao_cirurgiaos_created_by_user_id_idx",
+          "columns": [
+            {
+              "expression": "created_by_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "funcao_cirurgiaos_created_by_user_id_users_id_fk": {
+          "name": "funcao_cirurgiaos_created_by_user_id_users_id_fk",
+          "tableFrom": "funcao_cirurgiaos",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.procedimentos": {
+      "name": "procedimentos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "especialidade_id": {
+          "name": "especialidade_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_global": {
+          "name": "is_global",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "procedimentos_nome_global_uq": {
+          "name": "procedimentos_nome_global_uq",
+          "columns": [
+            {
+              "expression": "nome",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null and is_global",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "procedimentos_created_by_user_id_idx": {
+          "name": "procedimentos_created_by_user_id_idx",
+          "columns": [
+            {
+              "expression": "created_by_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "procedimentos_especialidade_id_idx": {
+          "name": "procedimentos_especialidade_id_idx",
+          "columns": [
+            {
+              "expression": "especialidade_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "procedimentos_especialidade_id_especialidades_id_fk": {
+          "name": "procedimentos_especialidade_id_especialidades_id_fk",
+          "tableFrom": "procedimentos",
+          "tableTo": "especialidades",
+          "columnsFrom": [
+            "especialidade_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "procedimentos_created_by_user_id_users_id_fk": {
+          "name": "procedimentos_created_by_user_id_users_id_fk",
+          "tableFrom": "procedimentos",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tipo_de_abordagens": {
+      "name": "tipo_de_abordagens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_global": {
+          "name": "is_global",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "tipo_de_abordagens_nome_global_uq": {
+          "name": "tipo_de_abordagens_nome_global_uq",
+          "columns": [
+            {
+              "expression": "nome",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null and is_global",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "tipo_de_abordagens_created_by_user_id_idx": {
+          "name": "tipo_de_abordagens_created_by_user_id_idx",
+          "columns": [
+            {
+              "expression": "created_by_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tipo_de_abordagens_created_by_user_id_users_id_fk": {
+          "name": "tipo_de_abordagens_created_by_user_id_users_id_fk",
+          "tableFrom": "tipo_de_abordagens",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tipo_de_cirurgias": {
+      "name": "tipo_de_cirurgias",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_global": {
+          "name": "is_global",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "tipo_de_cirurgias_nome_global_uq": {
+          "name": "tipo_de_cirurgias_nome_global_uq",
+          "columns": [
+            {
+              "expression": "nome",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null and is_global",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "tipo_de_cirurgias_created_by_user_id_idx": {
+          "name": "tipo_de_cirurgias_created_by_user_id_idx",
+          "columns": [
+            {
+              "expression": "created_by_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tipo_de_cirurgias_created_by_user_id_users_id_fk": {
+          "name": "tipo_de_cirurgias_created_by_user_id_users_id_fk",
+          "tableFrom": "tipo_de_cirurgias",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.zona_anatomicas": {
+      "name": "zona_anatomicas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ordem": {
+          "name": "ordem",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "is_global": {
+          "name": "is_global",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "zona_anatomicas_nome_global_uq": {
+          "name": "zona_anatomicas_nome_global_uq",
+          "columns": [
+            {
+              "expression": "nome",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null and is_global",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "zona_anatomicas_created_by_user_id_idx": {
+          "name": "zona_anatomicas_created_by_user_id_idx",
+          "columns": [
+            {
+              "expression": "created_by_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "zona_anatomicas_created_by_user_id_users_id_fk": {
+          "name": "zona_anatomicas_created_by_user_id_users_id_fk",
+          "tableFrom": "zona_anatomicas",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.especialidade_hospital": {
+      "name": "especialidade_hospital",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "especialidade_id": {
+          "name": "especialidade_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hospital_id": {
+          "name": "hospital_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "especialidade_hospital_item_hospital_uq": {
+          "name": "especialidade_hospital_item_hospital_uq",
+          "columns": [
+            {
+              "expression": "especialidade_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "especialidade_hospital_hospital_id_idx": {
+          "name": "especialidade_hospital_hospital_id_idx",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "especialidade_hospital_item_idx": {
+          "name": "especialidade_hospital_item_idx",
+          "columns": [
+            {
+              "expression": "especialidade_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "especialidade_hospital_especialidade_id_especialidades_id_fk": {
+          "name": "especialidade_hospital_especialidade_id_especialidades_id_fk",
+          "tableFrom": "especialidade_hospital",
+          "tableTo": "especialidades",
+          "columnsFrom": [
+            "especialidade_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "especialidade_hospital_hospital_id_hospitals_id_fk": {
+          "name": "especialidade_hospital_hospital_id_hospitals_id_fk",
+          "tableFrom": "especialidade_hospital",
+          "tableTo": "hospitals",
+          "columnsFrom": [
+            "hospital_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "especialidade_hospital_created_by_user_id_users_id_fk": {
+          "name": "especialidade_hospital_created_by_user_id_users_id_fk",
+          "tableFrom": "especialidade_hospital",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.funcao_cirurgiao_hospital": {
+      "name": "funcao_cirurgiao_hospital",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "funcao_cirurgiao_id": {
+          "name": "funcao_cirurgiao_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hospital_id": {
+          "name": "hospital_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "funcao_cirurgiao_hospital_item_hospital_uq": {
+          "name": "funcao_cirurgiao_hospital_item_hospital_uq",
+          "columns": [
+            {
+              "expression": "funcao_cirurgiao_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "funcao_cirurgiao_hospital_hospital_id_idx": {
+          "name": "funcao_cirurgiao_hospital_hospital_id_idx",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "funcao_cirurgiao_hospital_item_idx": {
+          "name": "funcao_cirurgiao_hospital_item_idx",
+          "columns": [
+            {
+              "expression": "funcao_cirurgiao_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "funcao_cirurgiao_hospital_funcao_cirurgiao_id_funcao_cirurgiaos_id_fk": {
+          "name": "funcao_cirurgiao_hospital_funcao_cirurgiao_id_funcao_cirurgiaos_id_fk",
+          "tableFrom": "funcao_cirurgiao_hospital",
+          "tableTo": "funcao_cirurgiaos",
+          "columnsFrom": [
+            "funcao_cirurgiao_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "funcao_cirurgiao_hospital_hospital_id_hospitals_id_fk": {
+          "name": "funcao_cirurgiao_hospital_hospital_id_hospitals_id_fk",
+          "tableFrom": "funcao_cirurgiao_hospital",
+          "tableTo": "hospitals",
+          "columnsFrom": [
+            "hospital_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "funcao_cirurgiao_hospital_created_by_user_id_users_id_fk": {
+          "name": "funcao_cirurgiao_hospital_created_by_user_id_users_id_fk",
+          "tableFrom": "funcao_cirurgiao_hospital",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.procedimento_hospital": {
+      "name": "procedimento_hospital",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "procedimento_id": {
+          "name": "procedimento_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hospital_id": {
+          "name": "hospital_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "procedimento_hospital_item_hospital_uq": {
+          "name": "procedimento_hospital_item_hospital_uq",
+          "columns": [
+            {
+              "expression": "procedimento_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "procedimento_hospital_hospital_id_idx": {
+          "name": "procedimento_hospital_hospital_id_idx",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "procedimento_hospital_item_idx": {
+          "name": "procedimento_hospital_item_idx",
+          "columns": [
+            {
+              "expression": "procedimento_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "procedimento_hospital_procedimento_id_procedimentos_id_fk": {
+          "name": "procedimento_hospital_procedimento_id_procedimentos_id_fk",
+          "tableFrom": "procedimento_hospital",
+          "tableTo": "procedimentos",
+          "columnsFrom": [
+            "procedimento_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "procedimento_hospital_hospital_id_hospitals_id_fk": {
+          "name": "procedimento_hospital_hospital_id_hospitals_id_fk",
+          "tableFrom": "procedimento_hospital",
+          "tableTo": "hospitals",
+          "columnsFrom": [
+            "hospital_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "procedimento_hospital_created_by_user_id_users_id_fk": {
+          "name": "procedimento_hospital_created_by_user_id_users_id_fk",
+          "tableFrom": "procedimento_hospital",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tipo_de_abordagem_hospital": {
+      "name": "tipo_de_abordagem_hospital",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tipo_de_abordagem_id": {
+          "name": "tipo_de_abordagem_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hospital_id": {
+          "name": "hospital_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "tipo_de_abordagem_hospital_item_hospital_uq": {
+          "name": "tipo_de_abordagem_hospital_item_hospital_uq",
+          "columns": [
+            {
+              "expression": "tipo_de_abordagem_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "tipo_de_abordagem_hospital_hospital_id_idx": {
+          "name": "tipo_de_abordagem_hospital_hospital_id_idx",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "tipo_de_abordagem_hospital_item_idx": {
+          "name": "tipo_de_abordagem_hospital_item_idx",
+          "columns": [
+            {
+              "expression": "tipo_de_abordagem_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tipo_de_abordagem_hospital_tipo_de_abordagem_id_tipo_de_abordagens_id_fk": {
+          "name": "tipo_de_abordagem_hospital_tipo_de_abordagem_id_tipo_de_abordagens_id_fk",
+          "tableFrom": "tipo_de_abordagem_hospital",
+          "tableTo": "tipo_de_abordagens",
+          "columnsFrom": [
+            "tipo_de_abordagem_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "tipo_de_abordagem_hospital_hospital_id_hospitals_id_fk": {
+          "name": "tipo_de_abordagem_hospital_hospital_id_hospitals_id_fk",
+          "tableFrom": "tipo_de_abordagem_hospital",
+          "tableTo": "hospitals",
+          "columnsFrom": [
+            "hospital_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "tipo_de_abordagem_hospital_created_by_user_id_users_id_fk": {
+          "name": "tipo_de_abordagem_hospital_created_by_user_id_users_id_fk",
+          "tableFrom": "tipo_de_abordagem_hospital",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tipo_de_cirurgia_hospital": {
+      "name": "tipo_de_cirurgia_hospital",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tipo_de_cirurgia_id": {
+          "name": "tipo_de_cirurgia_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hospital_id": {
+          "name": "hospital_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "tipo_de_cirurgia_hospital_item_hospital_uq": {
+          "name": "tipo_de_cirurgia_hospital_item_hospital_uq",
+          "columns": [
+            {
+              "expression": "tipo_de_cirurgia_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "tipo_de_cirurgia_hospital_hospital_id_idx": {
+          "name": "tipo_de_cirurgia_hospital_hospital_id_idx",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "tipo_de_cirurgia_hospital_item_idx": {
+          "name": "tipo_de_cirurgia_hospital_item_idx",
+          "columns": [
+            {
+              "expression": "tipo_de_cirurgia_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tipo_de_cirurgia_hospital_tipo_de_cirurgia_id_tipo_de_cirurgias_id_fk": {
+          "name": "tipo_de_cirurgia_hospital_tipo_de_cirurgia_id_tipo_de_cirurgias_id_fk",
+          "tableFrom": "tipo_de_cirurgia_hospital",
+          "tableTo": "tipo_de_cirurgias",
+          "columnsFrom": [
+            "tipo_de_cirurgia_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "tipo_de_cirurgia_hospital_hospital_id_hospitals_id_fk": {
+          "name": "tipo_de_cirurgia_hospital_hospital_id_hospitals_id_fk",
+          "tableFrom": "tipo_de_cirurgia_hospital",
+          "tableTo": "hospitals",
+          "columnsFrom": [
+            "hospital_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "tipo_de_cirurgia_hospital_created_by_user_id_users_id_fk": {
+          "name": "tipo_de_cirurgia_hospital_created_by_user_id_users_id_fk",
+          "tableFrom": "tipo_de_cirurgia_hospital",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.zona_anatomica_hospital": {
+      "name": "zona_anatomica_hospital",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "zona_anatomica_id": {
+          "name": "zona_anatomica_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hospital_id": {
+          "name": "hospital_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ordem": {
+          "name": "ordem",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "zona_anatomica_hospital_item_hospital_uq": {
+          "name": "zona_anatomica_hospital_item_hospital_uq",
+          "columns": [
+            {
+              "expression": "zona_anatomica_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "zona_anatomica_hospital_hospital_id_idx": {
+          "name": "zona_anatomica_hospital_hospital_id_idx",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "zona_anatomica_hospital_item_idx": {
+          "name": "zona_anatomica_hospital_item_idx",
+          "columns": [
+            {
+              "expression": "zona_anatomica_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "zona_anatomica_hospital_zona_anatomica_id_zona_anatomicas_id_fk": {
+          "name": "zona_anatomica_hospital_zona_anatomica_id_zona_anatomicas_id_fk",
+          "tableFrom": "zona_anatomica_hospital",
+          "tableTo": "zona_anatomicas",
+          "columnsFrom": [
+            "zona_anatomica_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "zona_anatomica_hospital_hospital_id_hospitals_id_fk": {
+          "name": "zona_anatomica_hospital_hospital_id_hospitals_id_fk",
+          "tableFrom": "zona_anatomica_hospital",
+          "tableTo": "hospitals",
+          "columnsFrom": [
+            "hospital_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "zona_anatomica_hospital_created_by_user_id_users_id_fk": {
+          "name": "zona_anatomica_hospital_created_by_user_id_users_id_fk",
+          "tableFrom": "zona_anatomica_hospital",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.utentes": {
+      "name": "utentes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sexo": {
+          "name": "sexo",
+          "type": "sexo",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_nascimento": {
+          "name": "data_nascimento",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "processo": {
+          "name": "processo",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hospital_id": {
+          "name": "hospital_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "utentes_hospital_id_processo_uq": {
+          "name": "utentes_hospital_id_processo_uq",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "processo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "utentes_hospital_id_idx": {
+          "name": "utentes_hospital_id_idx",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "utentes_hospital_id_hospitals_id_fk": {
+          "name": "utentes_hospital_id_hospitals_id_fk",
+          "tableFrom": "utentes",
+          "tableTo": "hospitals",
+          "columnsFrom": [
+            "hospital_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "utentes_created_by_user_id_users_id_fk": {
+          "name": "utentes_created_by_user_id_users_id_fk",
+          "tableFrom": "utentes",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.cirurgias": {
+      "name": "cirurgias",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "registo_cirurgico_id": {
+          "name": "registo_cirurgico_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "diagnostico_id": {
+          "name": "diagnostico_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "procedimento_id": {
+          "name": "procedimento_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "tipo_lesao",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "funcao_cirurgiao_id": {
+          "name": "funcao_cirurgiao_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "clavien_dindo": {
+          "name": "clavien_dindo",
+          "type": "clavien_dindo",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "anatomia_patologica": {
+          "name": "anatomia_patologica",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "cirurgias_registo_cirurgico_id_idx": {
+          "name": "cirurgias_registo_cirurgico_id_idx",
+          "columns": [
+            {
+              "expression": "registo_cirurgico_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "cirurgias_registo_cirurgico_id_registo_cirurgicos_id_fk": {
+          "name": "cirurgias_registo_cirurgico_id_registo_cirurgicos_id_fk",
+          "tableFrom": "cirurgias",
+          "tableTo": "registo_cirurgicos",
+          "columnsFrom": [
+            "registo_cirurgico_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "cirurgias_diagnostico_id_diagnosticos_id_fk": {
+          "name": "cirurgias_diagnostico_id_diagnosticos_id_fk",
+          "tableFrom": "cirurgias",
+          "tableTo": "diagnosticos",
+          "columnsFrom": [
+            "diagnostico_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "cirurgias_procedimento_id_procedimentos_id_fk": {
+          "name": "cirurgias_procedimento_id_procedimentos_id_fk",
+          "tableFrom": "cirurgias",
+          "tableTo": "procedimentos",
+          "columnsFrom": [
+            "procedimento_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "cirurgias_funcao_cirurgiao_id_funcao_cirurgiaos_id_fk": {
+          "name": "cirurgias_funcao_cirurgiao_id_funcao_cirurgiaos_id_fk",
+          "tableFrom": "cirurgias",
+          "tableTo": "funcao_cirurgiaos",
+          "columnsFrom": [
+            "funcao_cirurgiao_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.registo_cirurgicos": {
+      "name": "registo_cirurgicos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hospital_id": {
+          "name": "hospital_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "utente_id": {
+          "name": "utente_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "especialidade_id": {
+          "name": "especialidade_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_cirurgia": {
+          "name": "data_cirurgia",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "idade_cirurgia": {
+          "name": "idade_cirurgia",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo_de_cirurgia_id": {
+          "name": "tipo_de_cirurgia_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo_de_abordagem_id": {
+          "name": "tipo_de_abordagem_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ambulatorio": {
+          "name": "ambulatorio",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "registo_cirurgicos_hospital_id_data_cirurgia_idx": {
+          "name": "registo_cirurgicos_hospital_id_data_cirurgia_idx",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "data_cirurgia",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "registo_cirurgicos_user_id_data_cirurgia_idx": {
+          "name": "registo_cirurgicos_user_id_data_cirurgia_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "data_cirurgia",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "registo_cirurgicos_hospital_id_hospitals_id_fk": {
+          "name": "registo_cirurgicos_hospital_id_hospitals_id_fk",
+          "tableFrom": "registo_cirurgicos",
+          "tableTo": "hospitals",
+          "columnsFrom": [
+            "hospital_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "registo_cirurgicos_user_id_users_id_fk": {
+          "name": "registo_cirurgicos_user_id_users_id_fk",
+          "tableFrom": "registo_cirurgicos",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "registo_cirurgicos_utente_id_utentes_id_fk": {
+          "name": "registo_cirurgicos_utente_id_utentes_id_fk",
+          "tableFrom": "registo_cirurgicos",
+          "tableTo": "utentes",
+          "columnsFrom": [
+            "utente_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "registo_cirurgicos_especialidade_id_especialidades_id_fk": {
+          "name": "registo_cirurgicos_especialidade_id_especialidades_id_fk",
+          "tableFrom": "registo_cirurgicos",
+          "tableTo": "especialidades",
+          "columnsFrom": [
+            "especialidade_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "registo_cirurgicos_tipo_de_cirurgia_id_tipo_de_cirurgias_id_fk": {
+          "name": "registo_cirurgicos_tipo_de_cirurgia_id_tipo_de_cirurgias_id_fk",
+          "tableFrom": "registo_cirurgicos",
+          "tableTo": "tipo_de_cirurgias",
+          "columnsFrom": [
+            "tipo_de_cirurgia_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "registo_cirurgicos_tipo_de_abordagem_id_tipo_de_abordagens_id_fk": {
+          "name": "registo_cirurgicos_tipo_de_abordagem_id_tipo_de_abordagens_id_fk",
+          "tableFrom": "registo_cirurgicos",
+          "tableTo": "tipo_de_abordagens",
+          "columnsFrom": [
+            "tipo_de_abordagem_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.atividades_cientificas": {
+      "name": "atividades_cientificas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "titulo": {
+          "name": "titulo",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "tipo_atividade",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data": {
+          "name": "data",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "autor_principal": {
+          "name": "autor_principal",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "posicao_autor": {
+          "name": "posicao_autor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fator_impacto": {
+          "name": "fator_impacto",
+          "type": "numeric(8, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ficheiro_path": {
+          "name": "ficheiro_path",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revista_conferencia": {
+          "name": "revista_conferencia",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "localizacao": {
+          "name": "localizacao",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "categoria": {
+          "name": "categoria",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "autores": {
+          "name": "autores",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "doi": {
+          "name": "doi",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "isbn": {
+          "name": "isbn",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "link": {
+          "name": "link",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ficheiro_original_name": {
+          "name": "ficheiro_original_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ficheiro_size": {
+          "name": "ficheiro_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "atividades_cientificas_user_id_idx": {
+          "name": "atividades_cientificas_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "atividades_cientificas_tipo_idx": {
+          "name": "atividades_cientificas_tipo_idx",
+          "columns": [
+            {
+              "expression": "tipo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "atividades_cientificas_data_idx": {
+          "name": "atividades_cientificas_data_idx",
+          "columns": [
+            {
+              "expression": "data",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "atividades_cientificas_user_id_users_id_fk": {
+          "name": "atividades_cientificas_user_id_users_id_fk",
+          "tableFrom": "atividades_cientificas",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.formacoes": {
+      "name": "formacoes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "titulo": {
+          "name": "titulo",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "tipo_formacao",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_inicio": {
+          "name": "data_inicio",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_fim": {
+          "name": "data_fim",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "duracao_horas": {
+          "name": "duracao_horas",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "creditos": {
+          "name": "creditos",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "certificado_path": {
+          "name": "certificado_path",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entidade_organizadora": {
+          "name": "entidade_organizadora",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "localizacao": {
+          "name": "localizacao",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "categoria": {
+          "name": "categoria",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo_participacao": {
+          "name": "tipo_participacao",
+          "type": "tipo_participacao",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tema_apresentacao": {
+          "name": "tema_apresentacao",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "certificado_original_name": {
+          "name": "certificado_original_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "certificado_size": {
+          "name": "certificado_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "formacoes_user_id_idx": {
+          "name": "formacoes_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "formacoes_tipo_idx": {
+          "name": "formacoes_tipo_idx",
+          "columns": [
+            {
+              "expression": "tipo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "formacoes_data_inicio_idx": {
+          "name": "formacoes_data_inicio_idx",
+          "columns": [
+            {
+              "expression": "data_inicio",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "formacoes_user_id_users_id_fk": {
+          "name": "formacoes_user_id_users_id_fk",
+          "tableFrom": "formacoes",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "formacoes_datas_check": {
+          "name": "formacoes_datas_check",
+          "value": "data_fim >= data_inicio"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.admin_users": {
+      "name": "admin_users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "session_version": {
+          "name": "session_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "failed_login_attempts": {
+          "name": "failed_login_attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "login_locked_until": {
+          "name": "login_locked_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "failed_two_factor_attempts": {
+          "name": "failed_two_factor_attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "two_factor_locked_until": {
+          "name": "two_factor_locked_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hospital_id": {
+          "name": "hospital_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "two_factor_secret": {
+          "name": "two_factor_secret",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "two_factor_recovery_codes": {
+          "name": "two_factor_recovery_codes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "two_factor_confirmed_at": {
+          "name": "two_factor_confirmed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "admin_users_email_uq": {
+          "name": "admin_users_email_uq",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "deleted_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "admin_users_hospital_id_idx": {
+          "name": "admin_users_hospital_id_idx",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "admin_users_hospital_id_hospitals_id_fk": {
+          "name": "admin_users_hospital_id_hospitals_id_fk",
+          "tableFrom": "admin_users",
+          "tableTo": "hospitals",
+          "columnsFrom": [
+            "hospital_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.audit_events": {
+      "name": "audit_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "actor_user_id": {
+          "name": "actor_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor_admin_user_id": {
+          "name": "actor_admin_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hospital_id": {
+          "name": "hospital_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "before": {
+          "name": "before",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "after": {
+          "name": "after",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "audit_events_actor_user_id_idx": {
+          "name": "audit_events_actor_user_id_idx",
+          "columns": [
+            {
+              "expression": "actor_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "audit_events_hospital_id_occurred_at_idx": {
+          "name": "audit_events_hospital_id_occurred_at_idx",
+          "columns": [
+            {
+              "expression": "hospital_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "audit_events_entity_idx": {
+          "name": "audit_events_entity_idx",
+          "columns": [
+            {
+              "expression": "entity_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "entity_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "audit_events_actor_user_id_users_id_fk": {
+          "name": "audit_events_actor_user_id_users_id_fk",
+          "tableFrom": "audit_events",
+          "tableTo": "users",
+          "columnsFrom": [
+            "actor_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "audit_events_actor_admin_user_id_admin_users_id_fk": {
+          "name": "audit_events_actor_admin_user_id_admin_users_id_fk",
+          "tableFrom": "audit_events",
+          "tableTo": "admin_users",
+          "columnsFrom": [
+            "actor_admin_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "audit_events_hospital_id_hospitals_id_fk": {
+          "name": "audit_events_hospital_id_hospitals_id_fk",
+          "tableFrom": "audit_events",
+          "tableTo": "hospitals",
+          "columnsFrom": [
+            "hospital_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.clavien_dindo": {
+      "name": "clavien_dindo",
+      "schema": "public",
+      "values": [
+        "sem_complicacoes",
+        "I",
+        "II",
+        "IIIa",
+        "IIIb",
+        "IVa",
+        "IVb",
+        "V"
+      ]
+    },
+    "public.membership_status": {
+      "name": "membership_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "approved"
+      ]
+    },
+    "public.sexo": {
+      "name": "sexo",
+      "schema": "public",
+      "values": [
+        "masculino",
+        "feminino",
+        "outro"
+      ]
+    },
+    "public.tipo_atividade": {
+      "name": "tipo_atividade",
+      "schema": "public",
+      "values": [
+        "artigo",
+        "comunicacao",
+        "congresso",
+        "poster",
+        "outro"
+      ]
+    },
+    "public.tipo_formacao": {
+      "name": "tipo_formacao",
+      "schema": "public",
+      "values": [
+        "curso",
+        "congresso",
+        "pos_graduacao",
+        "mestrado",
+        "doutoramento",
+        "outro"
+      ]
+    },
+    "public.tipo_lesao": {
+      "name": "tipo_lesao",
+      "schema": "public",
+      "values": [
+        "benigno",
+        "maligno"
+      ]
+    },
+    "public.tipo_participacao": {
+      "name": "tipo_participacao",
+      "schema": "public",
+      "values": [
+        "participante",
+        "orador",
+        "organizador",
+        "moderador"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

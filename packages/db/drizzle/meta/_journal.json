@@ -78,6 +78,13 @@
       "when": 1790792088109,
       "tag": "0010_square_madame_web",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790808967450,
+      "tag": "0011_shared_catalogs",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ export * from "./users.js";
 export * from "./auth.js";
 export * from "./hospitals.js";
 export * from "./reference.js";
+export * from "./catalog-hospitals.js";
 export * from "./utentes.js";
 export * from "./registos.js";
 export * from "./portfolio.js";

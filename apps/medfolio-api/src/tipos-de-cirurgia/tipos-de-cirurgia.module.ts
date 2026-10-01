@@ -1,11 +1,24 @@
 import { Module } from '@nestjs/common';
+import type { Database } from '@nexo-centro/db';
 import { JwtModule } from '../auth/jwt.module';
-import { TiposDeCirurgiaController } from './tipos-de-cirurgia.controller';
-import { TiposDeCirurgiaService } from './tipos-de-cirurgia.service';
+import { DRIZZLE } from '../database/drizzle.constants';
+import { SharedCatalogService } from '../common/catalog-shared.service';
+import { tiposDeCirurgiaCatalog } from '../common/catalog-shared.configs';
+import {
+  TiposDeCirurgiaController,
+  TIPOS_DE_CIRURGIA_CATALOG,
+} from './tipos-de-cirurgia.controller';
 
 @Module({
   imports: [JwtModule],
   controllers: [TiposDeCirurgiaController],
-  providers: [TiposDeCirurgiaService],
+  providers: [
+    {
+      provide: TIPOS_DE_CIRURGIA_CATALOG,
+      inject: [DRIZZLE],
+      useFactory: (db: Database) =>
+        new SharedCatalogService(db, tiposDeCirurgiaCatalog),
+    },
+  ],
 })
 export class TiposDeCirurgiaModule {}

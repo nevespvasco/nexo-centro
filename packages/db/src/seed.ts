@@ -8,17 +8,23 @@ import {
   atividadesCientificas,
   cirurgias,
   diagnosticos,
+  especialidadeHospital,
   especialidades,
   formacoes,
+  funcaoCirurgiaoHospital,
   funcaoCirurgiaos,
   hospitalUser,
   hospitals,
+  procedimentoHospital,
   procedimentos,
   registoCirurgicos,
+  tipoDeAbordagemHospital,
   tipoDeAbordagens,
+  tipoDeCirurgiaHospital,
   tipoDeCirurgias,
   users,
   utentes,
+  zonaAnatomicaHospital,
   zonaAnatomicas,
 } from "./schema/index.js";
 
@@ -72,14 +78,24 @@ async function main() {
         },
       ]);
 
+      // Especialidades: itens com id/conteúdo únicos, associados a hospitais.
+      // "Cirurgia Geral" é global (visível em todos). Ortopedia e Urologia são
+      // associadas ao respetivo hospital. createdByUserId fica null (itens sem
+      // criador identificável, só editáveis por administrador) — os utilizadores
+      // ainda não existem nesta fase do seed.
       const [espOrtopedia, espUrologia, espGlobalCirurgiaGeral] = await tx
         .insert(especialidades)
         .values([
-          { nome: "Ortopedia", hospitalId: hospitalCentral.id },
-          { nome: "Urologia", hospitalId: hospitalNorte.id },
-          { nome: "Cirurgia Geral" },
+          { nome: "Ortopedia" },
+          { nome: "Urologia" },
+          { nome: "Cirurgia Geral", isGlobal: true },
         ])
         .returning();
+
+      await tx.insert(especialidadeHospital).values([
+        { especialidadeId: espOrtopedia.id, hospitalId: hospitalCentral.id },
+        { especialidadeId: espUrologia.id, hospitalId: hospitalNorte.id },
+      ]);
 
       const [userJoao, userMaria, userRicardo] = await tx
         .insert(users)
@@ -131,13 +147,30 @@ async function main() {
         },
       ]);
 
+      // Zonas anatómicas: itens partilháveis; a ordem por hospital vive na
+      // associação. userJoao é o criador (pode gerir enquanto tiver acesso).
       const [zonaJoelho, zonaQuadril] = await tx
         .insert(zonaAnatomicas)
         .values([
-          { nome: "Joelho", hospitalId: hospitalCentral.id, ordem: 1 },
-          { nome: "Quadril", hospitalId: hospitalCentral.id, ordem: 2 },
+          { nome: "Joelho", createdByUserId: userJoao.id },
+          { nome: "Quadril", createdByUserId: userJoao.id },
         ])
         .returning();
+
+      await tx.insert(zonaAnatomicaHospital).values([
+        {
+          zonaAnatomicaId: zonaJoelho.id,
+          hospitalId: hospitalCentral.id,
+          ordem: 1,
+          createdByUserId: userJoao.id,
+        },
+        {
+          zonaAnatomicaId: zonaQuadril.id,
+          hospitalId: hospitalCentral.id,
+          ordem: 2,
+          createdByUserId: userJoao.id,
+        },
+      ]);
 
       const [diagLesaoMeniscal, diagOsteoartrose] = await tx
         .insert(diagnosticos)
@@ -163,32 +196,67 @@ async function main() {
           {
             nome: "Artroscopia do joelho",
             especialidadeId: espOrtopedia.id,
-            hospitalId: hospitalCentral.id,
+            createdByUserId: userJoao.id,
           },
           {
             nome: "Artroplastia da anca",
             especialidadeId: espOrtopedia.id,
-            hospitalId: hospitalCentral.id,
+            createdByUserId: userJoao.id,
           },
         ])
         .returning();
 
+      await tx.insert(procedimentoHospital).values([
+        {
+          procedimentoId: procArtroscopia.id,
+          hospitalId: hospitalCentral.id,
+          createdByUserId: userJoao.id,
+        },
+        {
+          procedimentoId: procArtroplastia.id,
+          hospitalId: hospitalCentral.id,
+          createdByUserId: userJoao.id,
+        },
+      ]);
+
       const [tipoCirurgiaEletiva] = await tx
         .insert(tipoDeCirurgias)
-        .values([{ nome: "Eletiva", hospitalId: hospitalCentral.id }])
+        .values([{ nome: "Eletiva", createdByUserId: userJoao.id }])
         .returning();
+
+      await tx.insert(tipoDeCirurgiaHospital).values([
+        {
+          tipoDeCirurgiaId: tipoCirurgiaEletiva.id,
+          hospitalId: hospitalCentral.id,
+          createdByUserId: userJoao.id,
+        },
+      ]);
 
       const [funcaoPrimeiroCirurgiao] = await tx
         .insert(funcaoCirurgiaos)
-        .values([
-          { nome: "Primeiro cirurgião", hospitalId: hospitalCentral.id },
-        ])
+        .values([{ nome: "Primeiro cirurgião", createdByUserId: userJoao.id }])
         .returning();
+
+      await tx.insert(funcaoCirurgiaoHospital).values([
+        {
+          funcaoCirurgiaoId: funcaoPrimeiroCirurgiao.id,
+          hospitalId: hospitalCentral.id,
+          createdByUserId: userJoao.id,
+        },
+      ]);
 
       const [abordagemArtroscopica] = await tx
         .insert(tipoDeAbordagens)
-        .values([{ nome: "Artroscópica", hospitalId: hospitalCentral.id }])
+        .values([{ nome: "Artroscópica", createdByUserId: userJoao.id }])
         .returning();
+
+      await tx.insert(tipoDeAbordagemHospital).values([
+        {
+          tipoDeAbordagemId: abordagemArtroscopica.id,
+          hospitalId: hospitalCentral.id,
+          createdByUserId: userJoao.id,
+        },
+      ]);
 
       const [utenteAna, utenteCarlos] = await tx
         .insert(utentes)

@@ -41,25 +41,9 @@ export class ApiError extends Error {
   }
 }
 
-// Reads the hospital selected in the shell switcher (see shell/AppShell.tsx),
-// persisted by usePersistentState under this key as a JSON string.
-function getActiveHospitalId(): string | null {
-  try {
-    const raw = localStorage.getItem('medfolio.hospital');
-    return raw !== null ? (JSON.parse(raw) as string) : null;
-  } catch {
-    return null;
-  }
-}
-
-// Single-hospital routes still use this legacy header. Multi-hospital reads
-// carry an explicit URL scope and must not inherit the management selection.
-// If the API ever
-// stops being same-origin, main.ts's enableCors needs
+// If the API ever stops being same-origin, main.ts's enableCors needs
 // allowedHeaders: ['Content-Type', 'X-Hospital-Id'] for the preflight to allow it.
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const activeHospitalId = getActiveHospitalId();
-  const hasReadScope = new URL(path, window.location.origin).searchParams.has('scope');
   const csrfToken = document.cookie
     .split('; ')
     .find((entry) => entry.startsWith('medfolio_csrf='))
@@ -69,7 +53,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     credentials: 'include',
     headers: {
       ...(init?.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : undefined),
-      ...(activeHospitalId && !hasReadScope ? { 'X-Hospital-Id': activeHospitalId } : undefined),
       ...(csrfToken ? { 'X-CSRF-Token': decodeURIComponent(csrfToken) } : undefined),
       ...init?.headers,
     },
@@ -254,90 +237,116 @@ export function deleteUtente(id: string, hospitalId?: string): Promise<void> {
   return request(`/utentes/${id}`, { method: 'DELETE', headers: hospitalId ? { 'X-Hospital-Id': hospitalId } : undefined });
 }
 
-// ── Especialidades (gestão de dados) ────────────────────────────────────
-// Distinto de `getEspecialidades`/`Especialidade` acima: aquele serve o dropdown
-// de perfil (todas as especialidades, sem scope de hospital); este serve a
-// página de gestão de dados (scoped ao hospital ativo + globais).
+// ── Catálogos partilháveis (gestão de dados) ─────────────────────────────
+// Um item tem id/conteúdo únicos e associa-se a N hospitais. A listagem usa o
+// âmbito (scope) na URL; criar exige um hospital concreto; associar/desassociar
+// gerem a partilha. `editable` e `isGlobal` vêm calculados do servidor.
 
-export interface EspecialidadeRow {
+export interface CatalogHospitalRef {
   id: string;
   nome: string;
-  descricao: string | null;
-  hospitalId: string | null;
+}
+
+export interface SharedCatalogRow {
+  id: string;
+  nome: string;
+  isGlobal: boolean;
+  createdByUserId: string | null;
+  hospitais: CatalogHospitalRef[];
+  editable: boolean;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+}
+
+/** Conjunto de operações partilhado por todos os catálogos partilháveis. */
+export interface SharedCatalogApi<TRow, TCreate, TUpdate> {
+  list(scope: HospitalScope): Promise<TRow[]>;
+  create(body: TCreate): Promise<TRow>;
+  update(id: string, body: TUpdate): Promise<TRow>;
+  remove(id: string): Promise<void>;
+  associate(id: string, hospitalId: string): Promise<void>;
+  disassociate(id: string, hospitalId: string): Promise<void>;
+}
+
+function sharedCatalogApi<TRow, TCreate, TUpdate>(
+  base: string,
+): SharedCatalogApi<TRow, TCreate, TUpdate> {
+  return {
+    list: (scope) => request(`${base}?${scopeParams(scope)}`),
+    create: (body) => postJson(base, body),
+    update: (id, body) => patchJson(`${base}/${id}`, body),
+    remove: (id) => deleteJson(`${base}/${id}`),
+    associate: (id, hospitalId) =>
+      postJson(`${base}/${id}/hospitais`, { hospitalId }),
+    disassociate: (id, hospitalId) =>
+      deleteJson(`${base}/${id}/hospitais/${hospitalId}`),
+  };
+}
+
+export interface EspecialidadeRow extends SharedCatalogRow {
+  descricao: string | null;
 }
 
 export interface EspecialidadeBody {
   nome: string;
   descricao: string | null;
+  hospitalId: string;
 }
 
-export function listEspecialidades(hospitalId?: string): Promise<EspecialidadeRow[]> {
-  return request('/especialidades', hospitalInit(hospitalId));
-}
+export type EspecialidadeUpdate = Partial<Pick<EspecialidadeBody, 'nome' | 'descricao'>>;
 
-export function getEspecialidade(id: string): Promise<EspecialidadeRow> {
-  return request(`/especialidades/${id}`);
-}
+export const especialidadesApi = sharedCatalogApi<
+  EspecialidadeRow,
+  EspecialidadeBody,
+  EspecialidadeUpdate
+>('/especialidades');
 
-export function createEspecialidade(body: EspecialidadeBody): Promise<EspecialidadeRow> {
-  return postJson('/especialidades', body);
-}
-
-export function updateEspecialidade(id: string, body: Partial<EspecialidadeBody>): Promise<EspecialidadeRow> {
-  return patchJson(`/especialidades/${id}`, body);
-}
-
-export function deleteEspecialidade(id: string): Promise<void> {
-  return deleteJson(`/especialidades/${id}`);
+export function listEspecialidades(scope: HospitalScope): Promise<EspecialidadeRow[]> {
+  return especialidadesApi.list(scope);
 }
 
 // ── Zonas anatómicas ─────────────────────────────────────────────────────
 
-export interface ZonaAnatomica {
-  id: string;
-  nome: string;
+export interface ZonaAnatomica extends SharedCatalogRow {
   descricao: string | null;
   ordem: number;
-  hospitalId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
 }
 
 export interface ZonaAnatomicaBody {
   nome: string;
   descricao: string | null;
+  hospitalId: string;
 }
 
-export function getZonasAnatomicas(hospitalId?: string): Promise<ZonaAnatomica[]> {
-  return request('/zonas-anatomicas', hospitalInit(hospitalId));
+export type ZonaAnatomicaUpdate = Partial<Pick<ZonaAnatomicaBody, 'nome' | 'descricao'>>;
+
+export const zonasAnatomicasApi = sharedCatalogApi<
+  ZonaAnatomica,
+  ZonaAnatomicaBody,
+  ZonaAnatomicaUpdate
+>('/zonas-anatomicas');
+
+export function getZonasAnatomicas(scope: HospitalScope): Promise<ZonaAnatomica[]> {
+  return zonasAnatomicasApi.list(scope);
 }
 
-export function getZonaAnatomica(id: string): Promise<ZonaAnatomica> {
-  return request(`/zonas-anatomicas/${id}`);
-}
-
-export function createZonaAnatomica(body: ZonaAnatomicaBody): Promise<ZonaAnatomica> {
-  return postJson('/zonas-anatomicas', body);
-}
-
-export function updateZonaAnatomica(id: string, body: Partial<ZonaAnatomicaBody>): Promise<ZonaAnatomica> {
-  return patchJson(`/zonas-anatomicas/${id}`, body);
-}
-
-export function deleteZonaAnatomica(id: string): Promise<void> {
-  return deleteJson(`/zonas-anatomicas/${id}`);
-}
-
-export function reorderZonasAnatomicas(items: { id: string; ordem: number }[]): Promise<void> {
-  return patchJson('/zonas-anatomicas/reorder', items);
+// A ordem é por hospital: reordena dentro de um hospital concreto (cabeçalho).
+export function reorderZonasAnatomicas(
+  items: { id: string; ordem: number }[],
+  hospitalId: string,
+): Promise<void> {
+  return request('/zonas-anatomicas/reorder', {
+    method: 'PATCH',
+    body: JSON.stringify(items),
+    headers: { 'X-Hospital-Id': hospitalId },
+  });
 }
 
 // ── Diagnósticos ─────────────────────────────────────────────────────────
 
+// Diagnósticos NÃO são partilháveis: mantêm um único hospital_id (ou global).
+// Têm o filtro de âmbito (via /diagnosticos/multi) mas não associação.
 export interface Diagnostico {
   id: string;
   nome: string;
@@ -351,6 +360,10 @@ export interface Diagnostico {
   deletedAt: string | null;
 }
 
+export interface DiagnosticoMulti extends Diagnostico {
+  hospitalNome: string | null;
+}
+
 export interface DiagnosticoBody {
   nome: string;
   zonaAnatomicaId: string;
@@ -358,63 +371,55 @@ export interface DiagnosticoBody {
   descricao?: string | null;
 }
 
+// Usado pelo formulário de registo: diagnósticos disponíveis num hospital (cabeçalho).
 export function getDiagnosticos(hospitalId?: string): Promise<Diagnostico[]> {
   return request('/diagnosticos', hospitalInit(hospitalId));
 }
 
-export function getDiagnostico(id: string): Promise<Diagnostico> {
-  return request(`/diagnosticos/${id}`);
+// Usado pela página de gestão: diagnósticos no âmbito selecionado, com o nome do hospital.
+export function getDiagnosticosMulti(scope: HospitalScope): Promise<DiagnosticoMulti[]> {
+  return request(`/diagnosticos/multi?${scopeParams(scope)}`);
 }
 
 export function createDiagnostico(body: DiagnosticoBody, hospitalId?: string): Promise<Diagnostico> {
   return request('/diagnosticos', { method: 'POST', body: JSON.stringify(body), headers: hospitalId ? { 'X-Hospital-Id': hospitalId } : undefined });
 }
 
-export function updateDiagnostico(id: string, body: Partial<DiagnosticoBody>): Promise<Diagnostico> {
-  return patchJson(`/diagnosticos/${id}`, body);
+export function updateDiagnostico(id: string, body: Partial<DiagnosticoBody>, hospitalId?: string): Promise<Diagnostico> {
+  return request(`/diagnosticos/${id}`, { method: 'PATCH', body: JSON.stringify(body), headers: hospitalId ? { 'X-Hospital-Id': hospitalId } : undefined });
 }
 
-export function deleteDiagnostico(id: string): Promise<void> {
-  return deleteJson(`/diagnosticos/${id}`);
+export function deleteDiagnostico(id: string, hospitalId?: string): Promise<void> {
+  return request(`/diagnosticos/${id}`, { method: 'DELETE', headers: hospitalId ? { 'X-Hospital-Id': hospitalId } : undefined });
 }
 
 // ── Procedimentos ────────────────────────────────────────────────────────
 
-export interface Procedimento {
-  id: string;
-  nome: string;
+export interface Procedimento extends SharedCatalogRow {
   especialidadeId: string | null;
-  especialidadeNome: string | null;
   descricao: string | null;
-  hospitalId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
 }
 
 export interface ProcedimentoBody {
   especialidadeId: string;
   nome: string;
+  hospitalId: string;
 }
 
-export function getProcedimentos(hospitalId?: string): Promise<Procedimento[]> {
-  return request('/procedimentos', hospitalInit(hospitalId));
+export type ProcedimentoUpdate = Partial<Pick<ProcedimentoBody, 'especialidadeId' | 'nome'>>;
+
+export const procedimentosApi = sharedCatalogApi<
+  Procedimento,
+  ProcedimentoBody,
+  ProcedimentoUpdate
+>('/procedimentos');
+
+export function getProcedimentos(scope: HospitalScope): Promise<Procedimento[]> {
+  return procedimentosApi.list(scope);
 }
 
-export function getProcedimento(id: string): Promise<Procedimento> {
-  return request(`/procedimentos/${id}`);
-}
-
-export function createProcedimento(body: ProcedimentoBody, hospitalId?: string): Promise<Procedimento> {
-  return request('/procedimentos', { method: 'POST', body: JSON.stringify(body), headers: hospitalId ? { 'X-Hospital-Id': hospitalId } : undefined });
-}
-
-export function updateProcedimento(id: string, body: Partial<ProcedimentoBody>): Promise<Procedimento> {
-  return patchJson(`/procedimentos/${id}`, body);
-}
-
-export function deleteProcedimento(id: string): Promise<void> {
-  return deleteJson(`/procedimentos/${id}`);
+export function createProcedimento(body: ProcedimentoBody): Promise<Procedimento> {
+  return procedimentosApi.create(body);
 }
 
 // ── Atividade científica (portfólio pessoal) ──────────────────────────────
@@ -624,62 +629,33 @@ export function exportRegistos(scope: HospitalScope, filtros?: RegistoFiltros): 
 
 // ── Catálogos: Tipos de Cirurgia, Funções Cirurgião, Tipos de Abordagem ──────
 
-export interface CatalogoItem {
-  id: string;
-  nome: string;
-  descricao: string | null;
-  hospitalId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-}
+// Catálogos partilháveis só-nome (id + nome), com âmbito e associações.
+export type CatalogoItem = SharedCatalogRow;
 
 export interface CatalogoItemBody {
   nome: string;
-  descricao: string | null;
+  hospitalId: string;
 }
 
-// Tipos de cirurgia
-export function listTiposDeCirurgia(): Promise<CatalogoItem[]> {
-  return request('/tipos-de-cirurgia');
-}
-export function createTipoDeCirurgia(body: CatalogoItemBody): Promise<CatalogoItem> {
-  return postJson('/tipos-de-cirurgia', body);
-}
-export function updateTipoDeCirurgia(id: string, body: Partial<CatalogoItemBody>): Promise<CatalogoItem> {
-  return patchJson(`/tipos-de-cirurgia/${id}`, body);
-}
-export function deleteTipoDeCirurgia(id: string): Promise<void> {
-  return deleteJson(`/tipos-de-cirurgia/${id}`);
-}
+export type CatalogoItemUpdate = { nome: string };
 
-// Funções cirurgião
-export function listFuncoesCirurgiao(): Promise<CatalogoItem[]> {
-  return request('/funcoes-cirurgiao');
-}
-export function createFuncaoCirurgiao(body: CatalogoItemBody): Promise<CatalogoItem> {
-  return postJson('/funcoes-cirurgiao', body);
-}
-export function updateFuncaoCirurgiao(id: string, body: Partial<CatalogoItemBody>): Promise<CatalogoItem> {
-  return patchJson(`/funcoes-cirurgiao/${id}`, body);
-}
-export function deleteFuncaoCirurgiao(id: string): Promise<void> {
-  return deleteJson(`/funcoes-cirurgiao/${id}`);
-}
+export const tiposDeCirurgiaApi = sharedCatalogApi<
+  CatalogoItem,
+  CatalogoItemBody,
+  CatalogoItemUpdate
+>('/tipos-de-cirurgia');
 
-// Tipos de abordagem
-export function listTiposDeAbordagem(): Promise<CatalogoItem[]> {
-  return request('/tipos-de-abordagem');
-}
-export function createTipoDeAbordagem(body: CatalogoItemBody): Promise<CatalogoItem> {
-  return postJson('/tipos-de-abordagem', body);
-}
-export function updateTipoDeAbordagem(id: string, body: Partial<CatalogoItemBody>): Promise<CatalogoItem> {
-  return patchJson(`/tipos-de-abordagem/${id}`, body);
-}
-export function deleteTipoDeAbordagem(id: string): Promise<void> {
-  return deleteJson(`/tipos-de-abordagem/${id}`);
-}
+export const funcoesCirurgiaoApi = sharedCatalogApi<
+  CatalogoItem,
+  CatalogoItemBody,
+  CatalogoItemUpdate
+>('/funcoes-cirurgiao');
+
+export const tiposDeAbordagemApi = sharedCatalogApi<
+  CatalogoItem,
+  CatalogoItemBody,
+  CatalogoItemUpdate
+>('/tipos-de-abordagem');
 
 // ── Painel + relatório ────────────────────────────────────────────────────
 

@@ -7,6 +7,8 @@ import {
 import {
   cirurgias,
   diagnosticos,
+  hospitals,
+  zonaAnatomicaHospital,
   zonaAnatomicas,
   type Database,
 } from '@nexo-centro/db';
@@ -14,7 +16,7 @@ import type {
   CreateDiagnostico,
   UpdateDiagnostico,
 } from '@nexo-centro/schemas';
-import { and, asc, eq, isNull, or } from 'drizzle-orm';
+import { and, asc, eq, exists, inArray, isNull, or, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../database/drizzle.constants';
 import { pgConstraintName, pgErrorCode } from '../common/pg-error.util';
 
@@ -45,6 +47,40 @@ export class DiagnosticosService {
         and(
           or(
             eq(diagnosticos.hospitalId, hospitalId),
+            isNull(diagnosticos.hospitalId),
+          ),
+          isNull(diagnosticos.deletedAt),
+        ),
+      )
+      .orderBy(asc(diagnosticos.nome));
+  }
+
+  /** Diagnósticos no âmbito (vários hospitais) + globais, com o nome do hospital. */
+  async listMulti(hospitalIds: string[]) {
+    return this.db
+      .select({
+        id: diagnosticos.id,
+        nome: diagnosticos.nome,
+        zonaAnatomicaId: diagnosticos.zonaAnatomicaId,
+        zonaAnatomicaNome: zonaAnatomicas.nome,
+        tipo: diagnosticos.tipo,
+        descricao: diagnosticos.descricao,
+        hospitalId: diagnosticos.hospitalId,
+        hospitalNome: hospitals.nome,
+        createdAt: diagnosticos.createdAt,
+        updatedAt: diagnosticos.updatedAt,
+        deletedAt: diagnosticos.deletedAt,
+      })
+      .from(diagnosticos)
+      .leftJoin(
+        zonaAnatomicas,
+        eq(diagnosticos.zonaAnatomicaId, zonaAnatomicas.id),
+      )
+      .leftJoin(hospitals, eq(diagnosticos.hospitalId, hospitals.id))
+      .where(
+        and(
+          or(
+            inArray(diagnosticos.hospitalId, hospitalIds),
             isNull(diagnosticos.hospitalId),
           ),
           isNull(diagnosticos.deletedAt),
@@ -160,17 +196,27 @@ export class DiagnosticosService {
     hospitalId: string,
     zonaAnatomicaId: string,
   ): Promise<void> {
+    // A zona tem de estar disponível no hospital do diagnóstico: global ou
+    // associada a esse hospital (o âmbito da zona vive na tabela de associação).
     const [row] = await this.db
       .select({ id: zonaAnatomicas.id })
       .from(zonaAnatomicas)
       .where(
         and(
           eq(zonaAnatomicas.id, zonaAnatomicaId),
-          or(
-            eq(zonaAnatomicas.hospitalId, hospitalId),
-            isNull(zonaAnatomicas.hospitalId),
-          ),
           isNull(zonaAnatomicas.deletedAt),
+          sql`(${zonaAnatomicas.isGlobal} = true OR ${exists(
+            this.db
+              .select({ one: sql`1` })
+              .from(zonaAnatomicaHospital)
+              .where(
+                and(
+                  eq(zonaAnatomicaHospital.zonaAnatomicaId, zonaAnatomicas.id),
+                  eq(zonaAnatomicaHospital.hospitalId, hospitalId),
+                  isNull(zonaAnatomicaHospital.deletedAt),
+                ),
+              ),
+          )})`,
         ),
       )
       .limit(1);
