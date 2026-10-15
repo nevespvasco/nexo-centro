@@ -247,7 +247,8 @@ export class AdminUsersService {
         },
       });
       return {
-        status: action === 'approve' ? ('approved' as const) : ('rejected' as const),
+        status:
+          action === 'approve' ? ('approved' as const) : ('rejected' as const),
       };
     });
   }

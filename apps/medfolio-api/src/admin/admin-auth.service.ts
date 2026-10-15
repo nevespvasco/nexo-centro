@@ -79,12 +79,7 @@ export class AdminAuthService {
       admin?.loginLockedUntil !== null &&
       admin?.loginLockedUntil !== undefined &&
       admin.loginLockedUntil > new Date();
-    if (
-      !admin ||
-      !passwordMatches ||
-      !admin.isActive ||
-      loginLocked
-    ) {
+    if (!admin || !passwordMatches || !admin.isActive || loginLocked) {
       if (admin && !passwordMatches && !loginLocked) {
         await this.recordLoginFailure(admin.id);
       }

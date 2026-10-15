@@ -174,7 +174,11 @@ export class FormacoesService {
 
   /** `creditos` é decimal na BD — o Drizzle espera string na escrita. */
   private toColumns<T extends UpdateFormacao>(payload: T) {
-    const { creditos, removerCertificado: _removerCertificado, ...rest } = payload;
+    const {
+      creditos,
+      removerCertificado: _removerCertificado,
+      ...rest
+    } = payload;
     return {
       ...rest,
       ...(creditos !== undefined

@@ -199,7 +199,11 @@ export class AtividadesCientificasService {
 
   /** `fatorImpacto` é decimal na BD — o Drizzle espera string na escrita. */
   private toColumns<T extends UpdateAtividadeCientifica>(payload: T) {
-    const { fatorImpacto, removerFicheiro: _removerFicheiro, ...rest } = payload;
+    const {
+      fatorImpacto,
+      removerFicheiro: _removerFicheiro,
+      ...rest
+    } = payload;
     return {
       ...rest,
       ...(fatorImpacto !== undefined

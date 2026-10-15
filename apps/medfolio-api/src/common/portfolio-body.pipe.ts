@@ -8,8 +8,9 @@ export class PortfolioBodyPipe implements PipeTransform {
   transform(value: unknown) {
     let body = value;
     if (value && typeof value === 'object' && 'payload' in value) {
-      const raw = (value as { payload: unknown }).payload;
-      if (typeof raw !== 'string') throw new BadRequestException('Payload inválido.');
+      const raw = value.payload;
+      if (typeof raw !== 'string')
+        throw new BadRequestException('Payload inválido.');
       try {
         body = JSON.parse(raw);
       } catch {
@@ -18,7 +19,9 @@ export class PortfolioBodyPipe implements PipeTransform {
     }
     const parsed = this.schema.safeParse(body);
     if (!parsed.success) {
-      throw new BadRequestException(parsed.error.issues.map((issue) => issue.message).join('; '));
+      throw new BadRequestException(
+        parsed.error.issues.map((issue) => issue.message).join('; '),
+      );
     }
     return parsed.data;
   }

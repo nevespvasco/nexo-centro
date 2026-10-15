@@ -103,11 +103,7 @@ export class AdminAuthController {
     token: string,
     maxAgeMs: number,
   ): void {
-    res.cookie(
-      ADMIN_SESSION_COOKIE,
-      token,
-      this.cookieOptions(maxAgeMs),
-    );
+    res.cookie(ADMIN_SESSION_COOKIE, token, this.cookieOptions(maxAgeMs));
     res.cookie(
       ADMIN_CSRF_COOKIE,
       randomBytes(32).toString('base64url'),

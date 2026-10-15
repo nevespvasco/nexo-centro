@@ -89,7 +89,9 @@ export class FormacoesController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor('certificado', { limits: { fileSize: 10_485_760 } }))
+  @UseInterceptors(
+    FileInterceptor('certificado', { limits: { fileSize: 10_485_760 } }),
+  )
   create(
     @CurrentUser() userId: string,
     @Body(new PortfolioBodyPipe(createFormacaoSchema)) body: CreateFormacao,
@@ -102,7 +104,9 @@ export class FormacoesController {
   }
 
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('certificado', { limits: { fileSize: 10_485_760 } }))
+  @UseInterceptors(
+    FileInterceptor('certificado', { limits: { fileSize: 10_485_760 } }),
+  )
   update(
     @CurrentUser() userId: string,
     @Param('id', ParseUUIDPipe) id: string,

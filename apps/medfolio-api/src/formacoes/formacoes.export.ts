@@ -23,7 +23,10 @@ export function buildFormacoesWorkbook(rows: Rows): ExcelJS.Workbook {
   ];
   sheet.getRow(1).font = { bold: true };
   for (const row of rows) {
-    sheet.addRow({ ...row, creditos: row.creditos ? Number(row.creditos) : null });
+    sheet.addRow({
+      ...row,
+      creditos: row.creditos ? Number(row.creditos) : null,
+    });
   }
   sheet.autoFilter = { from: 'A1', to: 'M1' };
   return workbook;

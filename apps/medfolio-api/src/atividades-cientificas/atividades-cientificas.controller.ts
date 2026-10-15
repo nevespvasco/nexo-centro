@@ -90,7 +90,9 @@ export class AtividadesCientificasController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor('ficheiro', { limits: { fileSize: 10_485_760 } }))
+  @UseInterceptors(
+    FileInterceptor('ficheiro', { limits: { fileSize: 10_485_760 } }),
+  )
   create(
     @CurrentUser() userId: string,
     @Body(new PortfolioBodyPipe(createAtividadeCientificaSchema))
@@ -104,7 +106,9 @@ export class AtividadesCientificasController {
   }
 
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('ficheiro', { limits: { fileSize: 10_485_760 } }))
+  @UseInterceptors(
+    FileInterceptor('ficheiro', { limits: { fileSize: 10_485_760 } }),
+  )
   update(
     @CurrentUser() userId: string,
     @Param('id', ParseUUIDPipe) id: string,

@@ -32,11 +32,7 @@ export class AdminUsersController {
     @Query('limit', new DefaultValuePipe(100), ParseIntPipe) limit: number,
     @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
   ) {
-    return this.adminUsersService.listUsers(
-      req.adminHospitalId,
-      limit,
-      offset,
-    );
+    return this.adminUsersService.listUsers(req.adminHospitalId, limit, offset);
   }
 
   @Patch('users/:id/active')
